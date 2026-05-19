@@ -1,0 +1,36 @@
+# pre-commit 훅. 설치: `pip install pre-commit && pre-commit install`
+# 수동 실행: `pre-commit run --all-files`
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  # 사내 데이터 / 비밀 차단
+  - repo: local
+    hooks:
+      - id: block-xlsx-csv
+        name: Block xlsx/csv/jsonl staging
+        entry: bash -c 'if git diff --cached --name-only | grep -E "\.(xlsx|xls|csv|jsonl|parquet)$" | grep -v "^fixtures/templates/"; then echo "사내 데이터 파일 commit 금지 (fixtures/templates/ 제외)"; exit 1; fi'
+        language: system
+        pass_filenames: false
+
+      - id: block-env
+        name: Block .env staging
+        entry: bash -c 'if git diff --cached --name-only | grep -E "^\.env(\.|$)"; then echo ".env 파일 commit 금지"; exit 1; fi'
+        language: system
+        pass_filenames: false

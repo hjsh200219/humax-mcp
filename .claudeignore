@@ -1,0 +1,80 @@
+# Claude/Agent 컨텍스트 노이즈 차단 (gitignore와 독립 동작)
+
+# Humax raw 데이터 (절대 금지 — gitignore와 중복이지만 명시적 차단)
+*.xlsx
+*.xls
+*.csv
+*.jsonl
+*.parquet
+docs/rfp/
+docs/references/*.xlsx
+
+# 사내 사전
+humax_config/allocation/*.json
+humax_config/cc_master.json
+humax_config/.local/
+
+# 환경/비밀
+.env
+.env.*
+
+# 백업/감사 로그 (PII 가능성)
+.backup/
+audit/
+.humax-mcp/
+*.bak
+
+# Python 빌드 산출물
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+dist/
+build/
+*.egg-info/
+.eggs/
+*.egg
+
+# 가상환경
+.venv/
+venv/
+env/
+ENV/
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+
+# 정적 분석 캐시
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+dmypy.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 하네스 작업 공간 (임시)
+_workspace/
+
+# OMC / Claude Code 내부 상태
+.claude/
+.claude-project/
+.omc/
+.aider*
+
+# 의존 lock (해당 없음, 미래 대비)
+poetry.lock
+uv.lock
+pip-log.txt

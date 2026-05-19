@@ -24,9 +24,12 @@ test = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
     "pytest-httpx>=0.30",
+    "pytest-cov>=5.0",
 ]
 dev = [
     "ruff>=0.5",
+    "vulture>=2.10",
+    "pre-commit>=3.7",
 ]
 
 [project.scripts]
@@ -43,6 +46,43 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 filterwarnings = [
     "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["src/humax_excel_mcp"]
+branch = true
+omit = [
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+fail_under = 70
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+[tool.vulture]
+paths = ["src/humax_excel_mcp"]
+min_confidence = 80
+ignore_names = [
+    "register_all",
+    "main",
+    "build_server",
+    "cls",
+    "model_config",
+]
+ignore_decorators = [
+    "@audited",
+    "@mcp.tool",
+    "@pytest.fixture",
+    "@field_validator",
+    "@model_validator",
+    "@classmethod",
 ]
 
 [tool.ruff]
