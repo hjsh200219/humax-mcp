@@ -1,79 +1,77 @@
 ---
-created: 2026-05-19T15:55:00+09:00
+created: 2026-05-19T22:30:00+09:00
 project: humax-mcp
-summary: humax-excel-mcp v0.1.1 — 디자인 드리프트 차단 3 도구 추가 (10 tools total, 177 tests green, push b972848)
+summary: humax-excel-mcp v0.1.2 — real-data adapter (raw_bp26 + aggregator + EVCS expand_evcs), 234 tests green, push b96b5d8
 ---
 
 ## Session Digest
 
-humax-excel-mcp v0.1.1 patch — PRD 에러 #3 (디자인 드리프트, "10번 재명령") 구조적 해결. ralplan consensus(Planner/Architect/Critic 2 iteration → APPROVED) 통과 후 ralph TDD 사이클로 US-015~US-020 6 스토리 완주. 3 신규 MCP 도구 추가:
-
-- `apply_golden_template` — 골든 템플릿 결정론 적용 (매번 동일 산출물)
-- `generate_report` — extract→template→verify 체이닝 orchestrator
-- `restore_backup` — side-file default + 이중 확인 게이트 in-place restore
-
-골든 템플릿 엔진: `core/template_bindings.py` (pydantic v2 binding models), `core/template_loader.py` (sidecar 검증), `scripts/build_fixture_templates.py` (docs/references/*.xlsx → fixtures/templates/*.xlsx 데이터 클리어드 + 수식/서식 보존).
-
-총 도구 수 7→10. 테스트 130→177 (+47). 회귀 0. PRD Revision 4 + Pre-mortem S8-S10 + §12.3.1 ADR 추가. 단일 커밋 `b972848 feat: v0.1.1 — add 3 MCP tools for design drift elimination`로 origin/main 푸시.
+humax-excel-mcp v0.1.2 — 실제 26BP raw 데이터 (header row 3, 15007 transactions, 13 배부율) 와 v0.1 bp26 (pre-aggregated cum cols) 사이 어댑터 레이어 추가. v0.1.1 구현 검증 중 발견: synthetic fixture 만 작동, 실제 reference xlsx 로는 빈 산출물. ralplan consensus (2 iterations, Critic ITERATE → APPROVE) 통과 후 ralph TDD 로 US-021~US-027 + US-024a 8 스토리 완주. 5-6s per `generate_report` real-data call. **commit b96b5d8 push 완료.**
 
 ## Progress
 
-- [x] US-015 fixtures (18/18 tests) — 3 골든 템플릿 + sidecar JSON 생성
-- [x] US-016 apply_golden_template (12/12) — 4-safety 패턴, 실제 post-write verify
-- [x] US-017 generate_report (8/8) — orchestrator
-- [x] US-018 restore_backup (5/5) — 이중 확인 게이트
-- [x] US-019 PRD Revision 4 — 10 tools 정합성, §4.9-4.11, S8-S10, ADR
-- [x] US-020 tool integrity + audited file_path_arg + integration 3/3 + e2e 2/2
-- [x] Architect reviewer: REJECTED 5 blockers → 모두 fix → APPROVED
-- [x] ai-slop-cleaner: 2 trivially-true assertions 강화 (>=0 → >0)
-- [x] git push (b972848)
-- [ ] v0.2 항목 (적요 분류, 건별 배부, PII 마스킹)
-- [ ] v0.3/v0.4 (SAP 연동, cron 자동화)
-- [ ] 실배포 갭 (install.ps1/CI/Claude Desktop config 등) — 강의 전 필수
+### 완료
+- [x] schemas/raw_bp26.py (NEW): 63-col transaction schema, 4 PII drop, 13 배부율, 6 Humax companies
+- [x] core/aggregator.py (NEW): aggregate_to_bp26(raw, target_month, *, expand_evcs) — base + EVCS-only paths
+- [x] core/excel_io.py: worksheet_to_dataframe header_row + schema_module 옵션 + auto-detect (scan rows 1-10, threshold 5+ matches). detect_source_format() 추가. 4 기존 callers 무수정 backward-compat.
+- [x] tools/template_engine.py: source_format + expand_evcs 라우팅, read_only=True src workbook fix (30s+ → 5s)
+- [x] tools/report.py: source_format + expand_evcs report_type 자동 결정
+- [x] template_bindings.py: HUMAX_ACCOUNT_BINDING filter ["HMX"] → 6 Humax 회사
+- [x] tests +57 (177 → 234): unit 19 aggregator + 9 raw_bp26 + 7 excel_io + 2 template_engine + integration 3 + e2e 13
+- [x] Real-data e2e (13 tests) `docs/references/26BP+...xlsx` 사용 — CI-safe @pytest.mark.skipif
+- [x] Critic verification APPROVE (loop 2 — 4 MAJOR gaps fixed)
+- [x] ruff clean (12 auto-fix + conftest pd top-level import)
+- [x] git commit b96b5d8, push to origin/main
+
+### 미완료
+- [ ] template_bindings 의 sheet 24개 추가 (현재 1 worked sheet 만 / template type)
+  - humax_allocation: '3월 누계' 만, 나머지 24 sheets (월별/누계/Diff) deferred
+  - humax_account / evcs_account: '요약' 만, 나머지 sheets deferred
+  - 운영 중 실제 채우는 sheet 발견 시 incremental 추가
+- [ ] generate_report 산출물의 row5 D5/E5 None 이슈 확인 (formula 셀이지만 sum 결과 None — 데이터가 실제로 비어서?)
 
 ## Next Steps
 
-1. **실배포 갭 10종** (PRD §9.5 v0.1 그대로 carries over):
-   1. `scripts/install.ps1` + `install.sh`
-   2. `scripts/update.ps1`
-   3. Claude Desktop config 자동 등록 PowerShell
-   4. `.github/workflows/test.yml` CI
-   5. `humax_config/.local` CC 마스터 분리
-   6. 배부율 마스터 submodule
-   7. `oapi.koreaexim.go.kr` 사내 방화벽 IT 협의
-   8. STDIO 실 핸드셰이크 smoke test
-   9. audit chmod 600 OS별 실측
-   10. SOW hypercare 책임 소재
-2. **남은 SheetBinding 30개 완성** (각 template_type 당 worked 1개만 현재; 나머지 30 sheet bindings를 conftest 검증 gate 후 추가 작성)
-3. **v0.1.2 followups (architect deferred)**: restore_backup audit `restored_path` 기록 추가, audit `RestoreBackupResult.backup_path` attr 부재 fix
-4. **v0.2 우선순위**: `classify_by_text` (적요 PoC) → `allocate_costs` 건별 배부 → `mask_pii`/`mask_amounts`
+1. **operational verification** — Cowork 환경에서 `generate_report(source_file, report_type, output_path, month=3)` 실제 호출 → Live Artifact 렌더 확인
+2. **bindings 확장** — 추가 sheet 발견 시 template_bindings.py 의 각 _BINDING 에 SheetBinding 추가
+3. **performance budget** — 150k row 가정 시 polars 도입 검토 (현재 pandas, 15k → 5s; linear scale 시 50s 한계 가까움)
+4. **MCP integration test** — Claude Desktop / Cowork 실제 stdio 호출로 5s 응답 시간 검증
 
 ## Blockers
 
-- 실 26BP raw 데이터 미접근 (합성 fixture + reference 산출물만 검증) — 실파일 dry_run 미실측
-- 사내 GitHub Org repo 정책 (사내 IT 확정 대기)
-- 사내 방화벽 `oapi.koreaexim.go.kr` 허용 여부
-- Anthropic DPA/ZDR 정책
+없음. 실제 데이터 검증 완료 (4108 populated cells, formula 보존, 디자인 보존).
 
 ## Watch Out
 
-- v0.1.1 신규 도구 ralph 가이드: docs/references/*.xlsx는 LOCAL ONLY (gitignored). 새 환경에서 `scripts/build_fixture_templates.py` 실행 불가하면 fixtures/templates/ 커밋분 사용
-- `apply_golden_template` post-write verify는 첫 row만 spot-check (full row 비교 X) — 큰 buggy mapping은 binding spec 검토 의존
-- restore_backup `confirm_overwrite_original=True` + `original_file_path` 양쪽 필요 — LLM 우발 트리거 방지
-- audit `file_path_arg` extension은 백워드 호환이지만 신규 tool 등록 시 `register_all`에서 명시 지정 필요
-- 강의 모듈 7 (2시간 25분) 시간 블록 변경 금지 — v0.1.1 도구는 보충 모듈 또는 v0.2 강의로 다룸
+- **read_only=True 한계**: `ws.cell(r,c).value = X` 쓰기 불가. mutate path 인 template_wb 는 read_only=False 유지.
+- **EVCS expand_evcs flag**: 잘못 호출 시 빈 출력 — silent corruption 없음 (visible failure 보장).
+- **bp26.py FROZEN**: v0.1.2 에서도 손대지 말 것. 변경 필요 시 raw_bp26 또는 신규 schema 파일.
+- **template_bindings 24+ sheets deferred**: 1 worked sheet/type 만 검증됨. 운영 중 빈 sheet 발견 시 binding 추가.
 
-## Files Touched (b972848)
+## Files Touched
 
-- `src/humax_excel_mcp/tools/`: `template_engine.py`, `report.py`, `restore.py` (NEW), `__init__.py` (10 tools)
-- `src/humax_excel_mcp/core/`: `template_bindings.py`, `template_loader.py` (NEW), `audit.py` (file_path_arg), `errors.py` (5 new codes)
-- `src/humax_excel_mcp/schemas/`: `requests.py` (3 new), `responses.py` (3 new + supporting)
-- `src/humax_excel_mcp/`: `server.py`, `__init__.py` (v0.1.1)
-- `pyproject.toml` (v0.1.1, 10 tools)
-- `scripts/build_fixture_templates.py` (NEW)
-- `fixtures/templates/`: 3 xlsx + 3 sidecar JSON (NEW, committed)
-- `tests/unit/`: `test_fixture_templates.py`, `test_template_engine.py`, `test_report.py`, `test_restore.py` (NEW)
-- `tests/integration/`: `test_template_chain.py` (NEW), `test_mcp_server.py` (10 tools)
-- `tests/e2e/test_monthly_close.py` (Step 5/6/7 extension)
-- `docs/prd/mcp-design-plan.md` (Revision 4), `humax-lecture-plan.md` (10개 도구 + 보충 모듈 정책)
-- `.gitignore` (fixtures/templates 예외)
+### New
+- `src/humax_excel_mcp/schemas/raw_bp26.py`
+- `src/humax_excel_mcp/core/aggregator.py`
+- `tests/unit/test_aggregator.py`
+- `tests/e2e/test_real_data.py`
+- `.claude-project/memory/{excel-io-readonly-source-large-file,aggregator-evcs-per-call-flag,raw-vs-aggregated-schema-separation}.md`
+
+### Modified
+- `src/humax_excel_mcp/core/excel_io.py` (worksheet_to_dataframe + detect_source_format)
+- `src/humax_excel_mcp/core/template_bindings.py` (humax_account 6 companies)
+- `src/humax_excel_mcp/tools/template_engine.py` (source_format + read_only)
+- `src/humax_excel_mcp/tools/report.py` (source_format + expand_evcs routing)
+- `tests/conftest.py` (synthetic_raw_26bp_df fixture + pd import)
+- `tests/unit/test_schemas.py` (TestRawBP26Schema)
+- `tests/unit/test_excel_io.py` (header_row + auto-detect tests)
+- `tests/unit/test_template_engine.py` (6 companies filter test + aggregator flow)
+- `tests/integration/test_template_chain.py` (raw→template + aggregated negative path)
+- `.claude-project/memory/MEMORY.md` (3 entries)
+
+### Deleted
+- `.env.example` (사용자 의도)
+
+### Plan
+- `.omc/plans/v012-real-data-adapter.md` (1836 lines, RALPLAN-DR Deliberate consensus APPROVED)
+- `.omc/plans/open-questions-v012.md`

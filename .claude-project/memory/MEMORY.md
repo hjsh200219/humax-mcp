@@ -9,3 +9,6 @@
 - [Excel write 4중 안전 패턴](write-tool-output-path-safety.md) — backup + output_path 검증 + dry_run + post-verify
 - [골든 템플릿 엔진 패턴 (v0.1.1)](golden-template-engine-pattern.md) — 디자인 드리프트 차단: binding + sidecar + fixture build
 - [audited() file_path_arg 확장 (v0.1.1)](audited-file-path-arg-extension.md) — 신규 도구의 첫 인자 매핑 파라미터
+- [큰 xlsx source read_only (v0.1.2)](excel-io-readonly-source-large-file.md) — 30s+ → 0.2s, 15k+ rows formula evaluation 회피
+- [EVCS expand_evcs per-call flag (v0.1.2)](aggregator-evcs-per-call-flag.md) — additive is_virtual 거부, 구조적 double-count 방지
+- [bp26 vs raw_bp26 schema 분리 (v0.1.2)](raw-vs-aggregated-schema-separation.md) — frozen schema + 별도 raw 파일 + aggregator 변환 layer
