@@ -12,3 +12,5 @@
 - [큰 xlsx source read_only (v0.1.2)](excel-io-readonly-source-large-file.md) — 30s+ → 0.2s, 15k+ rows formula evaluation 회피
 - [EVCS expand_evcs per-call flag (v0.1.2)](aggregator-evcs-per-call-flag.md) — additive is_virtual 거부, 구조적 double-count 방지
 - [bp26 vs raw_bp26 schema 분리 (v0.1.2)](raw-vs-aggregated-schema-separation.md) — frozen schema + 별도 raw 파일 + aggregator 변환 layer
+- [vulture + pydantic v2 false positives](vulture-pydantic-v2-false-positives.md) — ignore_names에 cls/model_config 추가, path 인자 제거
+- [ruff format은 advisory (기존 프로젝트)](ruff-format-as-advisory-not-blocking.md) — blanket format 회피, 신규 파일만 pre-commit으로 자동 포맷

@@ -1,77 +1,108 @@
 ---
-created: 2026-05-19T22:30:00+09:00
+created: 2026-05-19T23:05:00+09:00
 project: humax-mcp
-summary: humax-excel-mcp v0.1.2 — real-data adapter (raw_bp26 + aggregator + EVCS expand_evcs), 234 tests green, push b96b5d8
+summary: harness engineering 셋업 + GC 2회 (L3 → L4 진입). source code 무수정, docs/scripts/config 추가만. 234 tests pass, 88.70% cov, vulture clean, pre-commit installed. Commit c18e05a push 완료.
 ---
 
 ## Session Digest
 
-humax-excel-mcp v0.1.2 — 실제 26BP raw 데이터 (header row 3, 15007 transactions, 13 배부율) 와 v0.1 bp26 (pre-aggregated cum cols) 사이 어댑터 레이어 추가. v0.1.1 구현 검증 중 발견: synthetic fixture 만 작동, 실제 reference xlsx 로는 빈 산출물. ralplan consensus (2 iterations, Critic ITERATE → APPROVE) 통과 후 ralph TDD 로 US-021~US-027 + US-024a 8 스토리 완주. 5-6s per `generate_report` real-data call. **commit b96b5d8 push 완료.**
+humax-excel-mcp에 agent-first harness 셋업. 기존 source code (src/, tests/, docs/prd/, README, progress.txt) 전혀 손대지 않고 다음을 추가: AGENTS.md (110 lines map), CLAUDE.md → AGENTS.md symlink, ARCHITECTURE.md (L1-L5 레이어), .claudeignore, .pre-commit-config.yaml, docs/ 하위 15개 파일 (QUALITY/RELIABILITY/SECURITY/PRODUCT_SENSE/PLANS + design-docs + exec-plans + generated/schema-snapshot + harness/{principles, maturity-framework, fix-catalog, gc-history, harness-setup}), scripts/{verify_docs.py, gc.sh}.
+
+GC #1 (베이스라인): 63.75 / L3 Enforced. 약점 Top3: P6 Coverage=4, P3 Invariant=5, P7 GC-Auto=5.
+
+TD-001/002/003 해소 작업:
+- pyproject.toml에 pytest-cov + vulture + pre-commit 추가, [tool.coverage] / [tool.vulture] 설정 등록
+- 실측 88.70% coverage (gate 70%+)
+- vulture clean (pydantic v2 false positive ignore_names로 해소)
+- pre-commit install 실행, ruff hooks + xlsx/.env 차단 hooks 활성
+
+GC #2 (해소 후): 70.4 / **L4 Optimized** (+6.65). P6: 4→8, P3: 5→7, P7: 5→7.
+
+신규 발견 TD-012 (도구 15 함수 >50줄), TD-013 (progress.txt 잔존).
+
+Commit c18e05a (24 files, 1587+ lines) push 완료. Pre-commit 첫 run에서 scripts/verify_docs.py 자동 reformat 발생 (신규 파일이라 OK).
 
 ## Progress
 
 ### 완료
-- [x] schemas/raw_bp26.py (NEW): 63-col transaction schema, 4 PII drop, 13 배부율, 6 Humax companies
-- [x] core/aggregator.py (NEW): aggregate_to_bp26(raw, target_month, *, expand_evcs) — base + EVCS-only paths
-- [x] core/excel_io.py: worksheet_to_dataframe header_row + schema_module 옵션 + auto-detect (scan rows 1-10, threshold 5+ matches). detect_source_format() 추가. 4 기존 callers 무수정 backward-compat.
-- [x] tools/template_engine.py: source_format + expand_evcs 라우팅, read_only=True src workbook fix (30s+ → 5s)
-- [x] tools/report.py: source_format + expand_evcs report_type 자동 결정
-- [x] template_bindings.py: HUMAX_ACCOUNT_BINDING filter ["HMX"] → 6 Humax 회사
-- [x] tests +57 (177 → 234): unit 19 aggregator + 9 raw_bp26 + 7 excel_io + 2 template_engine + integration 3 + e2e 13
-- [x] Real-data e2e (13 tests) `docs/references/26BP+...xlsx` 사용 — CI-safe @pytest.mark.skipif
-- [x] Critic verification APPROVE (loop 2 — 4 MAJOR gaps fixed)
-- [x] ruff clean (12 auto-fix + conftest pd top-level import)
-- [x] git commit b96b5d8, push to origin/main
+- [x] AGENTS.md / CLAUDE.md symlink / ARCHITECTURE.md / .claudeignore 신규 생성
+- [x] docs/ 15개 파일 (5 routes + 2 design-docs + 2 exec-plans + 1 generated + 5 harness)
+- [x] scripts/verify_docs.py (4 게이트: 도구 수 / 스키마 버전 / 레이어 import / AGENTS.md 크기)
+- [x] scripts/gc.sh (ruff + pytest+cov + vulture + verify-docs 통합)
+- [x] .pre-commit-config.yaml (ruff + 사내 데이터/.env 차단)
+- [x] pyproject.toml [tool.coverage] / [tool.vulture] 등록 (기존 deps 보존)
+- [x] pre-commit install (TD-003 해소)
+- [x] pytest-cov 실측 88.70% (TD-001 해소)
+- [x] vulture clean (TD-002 해소, pydantic v2 ignore 패턴 등록)
+- [x] GC #1 + GC #2 시행, gc-history.md 4행 기록
+- [x] progress.txt 내용을 docs/exec-plans/completed/v0.1.0-tdd-session.md로 이관
+- [x] Memory 2건 신규 추가: vulture-pydantic-v2-false-positives, ruff-format-as-advisory-not-blocking
+- [x] commit c18e05a, push 3543e9d..c18e05a
 
 ### 미완료
-- [ ] template_bindings 의 sheet 24개 추가 (현재 1 worked sheet 만 / template type)
-  - humax_allocation: '3월 누계' 만, 나머지 24 sheets (월별/누계/Diff) deferred
-  - humax_account / evcs_account: '요약' 만, 나머지 sheets deferred
-  - 운영 중 실제 채우는 sheet 발견 시 incremental 추가
-- [ ] generate_report 산출물의 row5 D5/E5 None 이슈 확인 (formula 셀이지만 sum 결과 None — 데이터가 실제로 비어서?)
+- [ ] **TD-012 (도구 함수 >50줄)**: 15 함수 (4개 100줄+: extract_filtered=154, apply_golden_template=154, verify_sums=145, allocation_set=123). 비즈니스 helper 추출 검토. 회의적: workflow orchestrator는 자연 증가 — 선택적 분할.
+- [ ] **TD-013 (progress.txt 잔존)**: 이관 사본 작성됨, 원본 삭제는 사용자 결정.
+- [ ] **README.md PowerShell-only**: Mac/Linux 진입 마찰 (TD-011, P3).
+- [ ] **L5 진입 (80+)**: 잔존 약점 P5 Disclosure (ADR 없음), P9 Knowledge (용어집 없음). 다음 sprint 후보.
 
 ## Next Steps
 
-1. **operational verification** — Cowork 환경에서 `generate_report(source_file, report_type, output_path, month=3)` 실제 호출 → Live Artifact 렌더 확인
-2. **bindings 확장** — 추가 sheet 발견 시 template_bindings.py 의 각 _BINDING 에 SheetBinding 추가
-3. **performance budget** — 150k row 가정 시 polars 도입 검토 (현재 pandas, 15k → 5s; linear scale 시 50s 한계 가까움)
-4. **MCP integration test** — Claude Desktop / Cowork 실제 stdio 호출로 5s 응답 시간 검증
+1. **TD-012 진단**: 4개 100줄+ 도구의 분기 복잡도 측정 후 helper 추출 PR 1건씩 (input validation / load / business / response build 단계 분리)
+2. **GC #3 정기 점검**: 1-2 sprint 후 또는 새 도구 추가 시 `bash scripts/gc.sh` 실행. gc-history.md에 자동 append됨.
+3. **AGENTS.md 효과 측정**: 다음 새 세션이 AGENTS.md를 우선 읽고 작업 시작하는지 확인 (회의적 검증).
+4. **(선택) ruff format apply**: 추후 별도 PR로 blanket apply 검토. 신규 파일은 pre-commit으로 자동 포맷.
 
 ## Blockers
 
-없음. 실제 데이터 검증 완료 (4108 populated cells, formula 보존, 디자인 보존).
+없음. 모든 게이트 PASS (ruff check, pytest 234, cov 88.70%, vulture clean, verify-docs 4/4).
 
 ## Watch Out
 
-- **read_only=True 한계**: `ws.cell(r,c).value = X` 쓰기 불가. mutate path 인 template_wb 는 read_only=False 유지.
-- **EVCS expand_evcs flag**: 잘못 호출 시 빈 출력 — silent corruption 없음 (visible failure 보장).
-- **bp26.py FROZEN**: v0.1.2 에서도 손대지 말 것. 변경 필요 시 raw_bp26 또는 신규 schema 파일.
-- **template_bindings 24+ sheets deferred**: 1 worked sheet/type 만 검증됨. 운영 중 빈 sheet 발견 시 binding 추가.
+- **vulture pydantic v2 false positive**: `ignore_names`에 `cls`, `model_config` 필수. positional path 인자 주면 pyproject 설정 무시됨. `vulture --min-confidence 80`만 호출.
+- **ruff format은 advisory**: 기존 코드 blanket format 금지. gc.sh에서 WARN으로 처리. 신규 파일만 pre-commit ruff-format hook으로 자동 정리.
+- **pre-commit 첫 run 지연**: ruff + pre-commit-hooks 환경 초기화에 1-2분. CI에서는 캐시 활용.
+- **verify_docs.py allowlist**: 신규 L2 orchestrator 추가 시 PRD 명시 + `L2_ORCHESTRATOR_ALLOWLIST` 갱신 + `docs/design-docs/layer-rules.md` Sanctioned 예외 섹션 추가.
+- **AGENTS.md 120줄 한도**: 도구/규칙 증가 시 docs/ 하위로 분리해서 ~100줄 유지. verify_docs.py 4번째 게이트가 강제.
+- **_workspace/ gitignored**: GC raw 결과 (`00_audit.md`, `00_code_facts.json`, `01-04`)는 로컬만. 다른 PC 이어받기 시 재생성.
 
 ## Files Touched
 
-### New
-- `src/humax_excel_mcp/schemas/raw_bp26.py`
-- `src/humax_excel_mcp/core/aggregator.py`
-- `tests/unit/test_aggregator.py`
-- `tests/e2e/test_real_data.py`
-- `.claude-project/memory/{excel-io-readonly-source-large-file,aggregator-evcs-per-call-flag,raw-vs-aggregated-schema-separation}.md`
+### New (root)
+- `AGENTS.md` (110 lines)
+- `CLAUDE.md` (symlink → AGENTS.md)
+- `ARCHITECTURE.md` (91 lines)
+- `.claudeignore` (80 lines)
+- `.pre-commit-config.yaml` (30 lines)
+
+### New (docs/)
+- `docs/PLANS.md`, `docs/PRODUCT_SENSE.md`, `docs/QUALITY.md`, `docs/RELIABILITY.md`, `docs/SECURITY.md`
+- `docs/design-docs/{core-beliefs, layer-rules}.md`
+- `docs/exec-plans/tech-debt-tracker.md` + `completed/v0.1.0-tdd-session.md`
+- `docs/generated/schema-snapshot.md`
+- `docs/harness/{principles, maturity-framework, fix-catalog, gc-history, harness-setup}.md`
+
+### New (scripts/)
+- `scripts/verify_docs.py` (4 게이트, executable)
+- `scripts/gc.sh` (통합 게이트, executable)
 
 ### Modified
-- `src/humax_excel_mcp/core/excel_io.py` (worksheet_to_dataframe + detect_source_format)
-- `src/humax_excel_mcp/core/template_bindings.py` (humax_account 6 companies)
-- `src/humax_excel_mcp/tools/template_engine.py` (source_format + read_only)
-- `src/humax_excel_mcp/tools/report.py` (source_format + expand_evcs routing)
-- `tests/conftest.py` (synthetic_raw_26bp_df fixture + pd import)
-- `tests/unit/test_schemas.py` (TestRawBP26Schema)
-- `tests/unit/test_excel_io.py` (header_row + auto-detect tests)
-- `tests/unit/test_template_engine.py` (6 companies filter test + aggregator flow)
-- `tests/integration/test_template_chain.py` (raw→template + aggregated negative path)
-- `.claude-project/memory/MEMORY.md` (3 entries)
+- `pyproject.toml`: pytest-cov + vulture + pre-commit 의존성, [tool.coverage] + [tool.vulture] 설정 추가
+- `.gitignore`: `_workspace/` 추가
 
-### Deleted
-- `.env.example` (사용자 의도)
+### New (.claude-project/memory/)
+- `vulture-pydantic-v2-false-positives.md`
+- `ruff-format-as-advisory-not-blocking.md`
 
-### Plan
-- `.omc/plans/v012-real-data-adapter.md` (1836 lines, RALPLAN-DR Deliberate consensus APPROVED)
-- `.omc/plans/open-questions-v012.md`
+### Untouched (보존)
+- `src/humax_excel_mcp/**` (10 tools / core / schemas)
+- `tests/**` (234 tests)
+- `docs/prd/**` (SSOT 설계 문서)
+- `docs/references/**` (사내 데이터 xlsx)
+- `fixtures/templates/**`
+- `README.md`, `progress.txt`, `LICENSE`
+
+## Commit / Push
+
+- Commit: `c18e05a` — `chore(harness): set up agent harness + GC infrastructure (L4 Optimized)`
+- Push: `3543e9d..c18e05a main -> main` (origin/hjsh200219/humax-mcp)
+- 24 files changed, 1587 insertions(+)
