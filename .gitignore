@@ -1,0 +1,71 @@
+# Humax raw 데이터 (절대 금지)
+*.xlsx
+*.xls
+*.csv
+*.jsonl
+*.parquet
+docs/rfp/
+
+# 환경 변수 (API 키, 사내 정보)
+.env
+.env.local
+.env.*.local
+
+# 백업/감사 로그 (PII 가능성)
+.backup/
+audit/
+.humax-mcp/
+*.bak
+
+# 사내 사전 (배부율, CC 마스터, 사내 코드)
+humax_config/allocation/*.json
+humax_config/cc_master.json
+humax_config/.local/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+dist/
+build/
+*.egg-info/
+.eggs/
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+
+# mypy / ruff
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+dmypy.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+desktop.ini
+
+# Claude Code
+.claude/
+.omc/
+.aider*
