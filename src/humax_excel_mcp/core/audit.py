@@ -35,16 +35,25 @@ def _write_record(record: dict[str, Any]) -> None:
         pass
 
 
-def audited(tool_name: str) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Awaitable[Any]]]:
+def audited(
+    tool_name: str,
+    *,
+    file_path_arg: str = "file_path",
+) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Awaitable[Any]]]:
+    """Audit decorator. `file_path_arg` names the kwarg holding the primary file path
+    for tools whose first arg is not literally `file_path` (e.g. `source_file`, `backup_path`)."""
     def decorator(fn: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
         @wraps(fn)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
             t0 = time.time()
+            primary_file = kwargs.get(file_path_arg)
+            if primary_file is None and args:
+                primary_file = args[0]
             record: dict[str, Any] = {
                 "timestamp": datetime.now().astimezone().isoformat(),
                 "tool": tool_name,
                 "user": "system",
-                "file_path": kwargs.get("file_path") or (args[0] if args else None),
+                "file_path": primary_file,
                 "sheet_name": kwargs.get("sheet_name") or (args[1] if len(args) > 1 else None),
                 "dry_run": kwargs.get("dry_run", False),
                 "success": True,

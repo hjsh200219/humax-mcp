@@ -221,7 +221,7 @@ Claude Desktop:
 
 **실습**:
 - mcp SDK 설치 (`pip install mcp`)
-- 7개 도구 중 **2개 hands-on + 1개 demo + 4개 사후 학습**:
+- 10개 도구 중 **2개 hands-on + 1개 demo + 4개 사후 학습** (v0.1):
   - hands-on: `extract_filtered` (35min) + `get_exchange_rates` (10min)
   - demo: `verify_sums` (5min)
   - 사후 (강사 템플릿 기반): `write_cells` / `generate_diff_candidates` / `get_allocation_rates` / `update_allocation_rates`

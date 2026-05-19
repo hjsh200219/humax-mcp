@@ -255,3 +255,43 @@ class ExchangeRatesData(BaseModel):
 class ExchangeRatesResult(BaseResult):
     data: ExchangeRatesData
     metadata: dict[str, Any]
+
+
+class TemplateBindingSummary(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    sheet_name: str
+    cells_to_populate: int
+    formulas_preserved: int
+    rows_matched: int = 0
+    rows_unmatched: int = 0
+
+
+class ApplyTemplateResult(BaseResult):
+    dry_run: bool
+    template_type: str
+    output_path: str | None = None
+    backup_path: str | None = None
+    sheets_processed: list[TemplateBindingSummary] = Field(default_factory=list)
+    verification: WriteVerification
+    metadata: dict[str, Any]
+
+
+class GenerateReportResult(BaseResult):
+    dry_run: bool
+    report_type: str
+    output_path: str | None = None
+    backup_path: str | None = None
+    template_used: str | None = None
+    verification: VerifySummary | None = None
+    data_summary: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any]
+
+
+class RestoreBackupResult(BaseResult):
+    dry_run: bool
+    restored_path: str | None = None
+    backup_sha256: str
+    restored_sha256: str | None = None
+    pre_restore_backup_path: str | None = None
+    metadata: dict[str, Any]

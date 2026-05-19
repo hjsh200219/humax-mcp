@@ -1,11 +1,12 @@
 # humax-excel-mcp 설계 문서
 
-> **버전:** v0.1-draft (Revision 3) | **작성일:** 2026-05-19  
-> **상태:** Revision 3 — `get_exchange_rates` 환율 도구 추가 (7개 도구). Architect/Critic 재검토 대기  
-> **관련 문서:** `consulting-plan.md` (Section A-I), `humax-lecture-plan.md` (모듈 7)  
+> **버전:** v0.1.1-draft (Revision 4) | **작성일:** 2026-05-19  
+> **상태:** Revision 4 — 디자인 드리프트 차단 골든 템플릿 엔진 (10개 도구). Ralplan consensus APPROVED.  
+> **관련 문서:** `consulting-plan.md` (Section A-I), `humax-lecture-plan.md` (모듈 7), `.omc/plans/v011-golden-template-engine.md`  
 > **Revision 1 변경 요약:** Architect/Critic 합의 9개 must-fix 적용 — P1 위반 해소, Option D 추가, FILE_LOCKED, truncation 정렬, 강사 체크리스트, 스키마 버전 관리, 감사 로그 접근 제어, 배포 전략 현실화, API 신뢰 경계 위험 등록  
 > **Revision 2 변경 요약:** (1) 전 도구 `output_format` + `artifact_hints` Live Artifact 출력 옵션 추가, (2) `get_allocation_rates` / `update_allocation_rates` 배부율 도구 2종 신규, (3) Pre-mortem S5-S6 추가 (6 시나리오), (4) 테스트/강의/RALPLAN-DR 정합성 갱신  
-> **Revision 3 변경 요약:** (1) `get_exchange_rates` 환율 자동 조회 도구 신규 (한국수출입은행 API), (2) Pre-mortem S7 추가 (7 시나리오), (3) 부록 D 통화 코드 매핑 추가, (4) 도구 수 6→7 전체 정합성 갱신, (5) 강의 모듈 7 환율 실습 +10분
+> **Revision 3 변경 요약:** (1) `get_exchange_rates` 환율 자동 조회 도구 신규 (한국수출입은행 API), (2) Pre-mortem S7 추가 (7 시나리오), (3) 부록 D 통화 코드 매핑 추가, (4) 도구 수 6→7 전체 정합성 갱신, (5) 강의 모듈 7 환율 실습 +10분  
+> **Revision 4 변경 요약:** (1) 디자인 드리프트 (에러 #3) 구조적 해결 — 골든 템플릿 엔진 3 도구 신규: `apply_golden_template` / `generate_report` / `restore_backup`, (2) 도구 수 7→10 전체 정합성 갱신, (3) Pre-mortem S8-S10 추가 (10 시나리오), (4) `fixtures/templates/*.xlsx` 골든 템플릿 (Humax 배부판/계정별, EVCS 계정별) 데이터 클리어드 산출물, (5) `restore_backup` 백업 복구 도구 (v0.2→v0.1.1 선반영), (6) `audited()` `file_path_arg` 확장 (백워드 호환)
 
 ---
 
@@ -64,7 +65,7 @@ humax-excel-mcp/
 ├── src/
 │   └── humax_excel_mcp/
 │       ├── __init__.py
-│       ├── server.py           # FastMCP 앱 진입점 + 7개 도구 등록
+│       ├── server.py           # FastMCP 앱 진입점 + 10개 도구 등록
 │       ├── tools/
 │       │   ├── __init__.py
 │       │   ├── extract.py      # extract_filtered 구현
@@ -116,7 +117,9 @@ humax-excel-mcp/
 
 ---
 
-## 4. 7개 도구 상세 Spec
+## 4. 10개 도구 상세 Spec
+
+> v0.1.1 신규: §4.9 `apply_golden_template`, §4.10 `generate_report`, §4.11 `restore_backup` (Revision 4).
 
 ### 4.1 `extract_filtered` -- 필터링 추출
 
@@ -576,7 +579,7 @@ async def generate_diff_candidates(
 
 ### 4.5 Live Artifact 자동 생성
 
-모든 7개 도구에 `render_format: Literal["excel", "live_artifact", "both"] = "excel"` 파라미터를 추가하여, Claude Desktop(Cowork)의 Live Artifact 기능과 연동한다.
+모든 10개 도구에 `render_format: Literal["excel", "live_artifact", "both"] = "excel"` 파라미터를 추가하여, Claude Desktop(Cowork)의 Live Artifact 기능과 연동한다.
 
 #### 작동 메커니즘
 
@@ -1017,6 +1020,140 @@ async def get_exchange_rates(
 
 ---
 
+### 4.9 `apply_golden_template` -- 골든 템플릿 결정론 적용 (v0.1.1)
+
+전월 산출물 서식/수식을 보존한 채 당월 데이터만 결정론적으로 채워 매번 동일한 산출물을 생성. **에러 #3 (디자인 드리프트, "10번 재명령") 구조적 해결**.
+
+#### 함수 시그니처
+
+```python
+@mcp.tool()
+async def apply_golden_template(
+    source_file: str,
+    template_path: str,
+    template_type: Literal["humax_allocation", "humax_account", "evcs_account"],
+    output_path: str,
+    *,
+    month: int,
+    dry_run: bool = False,
+    render_format: Literal["excel", "live_artifact", "both"] = "excel",
+) -> ApplyTemplateResult
+```
+
+#### 동작 단계
+
+1. **입력 검증**: `month` 1-12, `output_path != source_file` (OVERWRITE_ORIGINAL_FORBIDDEN), `template_path` 존재 + sidecar JSON 존재
+2. **template loader**: sidecar `template_type`/`schema_version` 검증, 시트명 binding과 일치 확인 (TEMPLATE_MALFORMED)
+3. **백업**: `source_file` 자동 백업 (dry-run 제외)
+4. **binding lookup**: `core/template_bindings.py::get_binding(template_type)` (BINDING_NOT_FOUND)
+5. **per-sheet 처리**: binding.sheets 각 SheetBinding마다
+   - source df에서 `row_selection`로 필터/정렬
+   - `data_start_row`~`data_end_row` 범위 셀에 `column_map` 적용 (template_col_letter → source_col_key)
+   - MergedCell 스킵, formula cell 스킵 (값 보존)
+6. **저장 + 사후 검증**: dry-run이 아니면 `output_path` 저장 후 재 로딩하여 셀 값 일치 확인
+7. **반환**: ApplyTemplateResult (sheets_processed, verification, backup_path)
+
+#### 4중 안전 정책 (write_cells 패턴 상속)
+
+- 자동 백업 (비활성화 불가)
+- `output_path.resolve() != source_file.resolve()` 강제
+- `dry_run=True` 시 파일 미작성
+- 사후 verify (저장 후 재 로딩 + 셀 검증)
+
+#### 에러 케이스
+
+| 에러 | 코드 |
+|---|---|
+| 소스 파일 미존재 | `FILE_NOT_FOUND` |
+| 소스 파일 잠금 | `FILE_LOCKED` |
+| 시트 미존재 | `SHEET_NOT_FOUND` |
+| 스키마 불일치 | `SCHEMA_MISMATCH` |
+| 템플릿 미존재 | `TEMPLATE_NOT_FOUND` |
+| 템플릿 구조 불일치 (sidecar 없음/sheet 누락) | `TEMPLATE_MALFORMED` |
+| 알 수 없는 template_type | `BINDING_NOT_FOUND` |
+| 백업 실패 | `BACKUP_FAILED` |
+| 원본 덮어쓰기 시도 | `OVERWRITE_ORIGINAL_FORBIDDEN` |
+| 사후 검증 실패 | `VERIFICATION_FAILED` |
+| month 범위 위반 | `INVALID_MONTH` |
+
+---
+
+### 4.10 `generate_report` -- 종합 산출물 자동 생성 (v0.1.1)
+
+`extract_filtered` + `apply_golden_template` + `verify_sums` 체이닝 orchestrator. Step 5/6/7 한 줄 호출.
+
+#### 함수 시그니처
+
+```python
+@mcp.tool()
+async def generate_report(
+    source_file: str,
+    report_type: Literal["humax_allocation", "humax_account", "evcs_account"],
+    output_path: str,
+    *,
+    month: int,
+    dry_run: bool = False,
+    verify_after: bool = True,
+    render_format: Literal["excel", "live_artifact", "both"] = "excel",
+    template_dir: str | None = None,  # 기본 fixtures/templates/
+) -> GenerateReportResult
+```
+
+#### 동작 단계
+
+1. `report_type` → `fixtures/templates/{report_type}.xlsx` 자동 해석 (TEMPLATE_NOT_FOUND)
+2. `apply_golden_template` 내부 호출 (4중 안전 상속)
+3. `verify_after=True` 시 산출 파일에 `verify_sums` 호출
+4. 데이터 요약 집계 (rows_matched, cells_populated, formulas_preserved)
+5. dry-run 아니면서 rows_matched + rows_unmatched == 0 시 EMPTY_RESULT
+
+#### 에러
+
+§4.9 에러 전체 + `EMPTY_RESULT`
+
+---
+
+### 4.11 `restore_backup` -- 백업 복구 (v0.1.1)
+
+`.backup/` 디렉터리의 백업 파일을 복원. 기본은 side-file 복원, in-place는 명시적 이중 확인 게이트.
+
+#### 함수 시그니처
+
+```python
+@mcp.tool()
+async def restore_backup(
+    backup_path: str,
+    output_path: str,
+    *,
+    confirm_overwrite_original: bool = False,
+    original_file_path: str | None = None,
+    dry_run: bool = False,
+    render_format: Literal["excel", "live_artifact", "both"] = "excel",
+) -> RestoreBackupResult
+```
+
+#### 동작 단계
+
+1. `backup_path` 존재 + xlsx 검증 (BACKUP_NOT_FOUND)
+2. `backup_path` sha256 계산
+3. **이중 확인 게이트**: `output_path == original_file_path` 시 `confirm_overwrite_original=True` 필수 (아니면 OVERWRITE_ORIGINAL_FORBIDDEN)
+4. in-place 복구 시 `original_file_path`의 pre-restore backup 생성 (BACKUP_FAILED)
+5. `shutil.copy2(backup_path, output_path)` (RESTORE_FAILED)
+6. 사후 sha256 verify: `sha256(restored) == sha256(backup)` (RESTORE_FAILED)
+7. dry-run 시 메타데이터만 반환 (파일 미작성)
+
+#### 에러
+
+| 에러 | 코드 |
+|---|---|
+| 백업 파일 미존재 | `BACKUP_NOT_FOUND` |
+| 복구 실패 (copy/sha 검증) | `RESTORE_FAILED` |
+| in-place 시 confirm 누락 | `OVERWRITE_ORIGINAL_FORBIDDEN` |
+| 출력 디렉터리 없음 | `WRITE_PERMISSION_DENIED` |
+| pre-restore 백업 실패 | `BACKUP_FAILED` |
+
+---
+
 ## 5. 26BP 스키마 매핑
 
 26BP `예산+실적` 시트의 63컬럼을 MCP 도구에서 사용하는 정규화된 키 이름으로 매핑한다.
@@ -1221,7 +1358,7 @@ MCP 도구는 로컬에서 실행되므로 SAP 데이터가 외부 API로 전송
 
 | 대상 | 파일 | 테스트 케이스 | 통과 기준 |
 |---|---|---|---|
-| MCP 서버 기동 | `test_mcp_server.py` | FastMCP 앱 시작 → 7개 도구 노출 확인 | `mcp.list_tools()` 에 7개 도구 포함 |
+| MCP 서버 기동 | `test_mcp_server.py` | FastMCP 앱 시작 → 10개 도구 노출 확인 | `mcp.list_tools()` 에 10개 도구 포함 |
 | Tool invocation | `test_mcp_server.py` | MCP 프로토콜로 각 도구 호출 | 정상 응답 반환 |
 | 백업 + 편집 + 검증 체인 | `test_backup.py` | write_cells → verify_sums 순차 호출 | 편집 후 검증 통과 |
 | 동시 접근 | `test_mcp_server.py` | 같은 파일에 대해 2개 도구 동시 호출 | 파일 잠금 또는 순차 처리로 충돌 방지 |
@@ -1249,7 +1386,7 @@ MCP 도구는 로컬에서 실행되므로 SAP 데이터가 외부 API로 전송
 
 ---
 
-## 8. Pre-mortem (7 시나리오)
+## 8. Pre-mortem (10 시나리오)
 
 ### S1: write_cells가 원본 파일 깨짐 (백업 실패)
 
@@ -1327,6 +1464,39 @@ MCP 도구는 로컬에서 실행되므로 SAP 데이터가 외부 API로 전송
 | **예방** | (1) **Sanity check**: 전일 대비 ±20% 이내 검증. 위반 시 `sanity_warning: true` 경고 (데이터는 반환하되 주의 환기). (2) **Fallback 캐시**: TTL 12시간 인메모리 캐시로 API 장애 시 최근 캐시 데이터 반환. (3) **휴일 처리**: `fallback_to_previous=True` 기본값으로 최대 7일 전 영업일 데이터 자동 조회. (4) **감사 로그**: 조회 날짜 + 통화 + 환율값 + source(API/캐시) 기록 → 적용 후 `verify_sums` 권장 |
 | **탐지** | 감사 로그에 `actual_date`, `cached`, `fallback_used`, `sanity_warning` 필드 기록. sanity check 위반 시 경고 메시지 |
 | **복구** | 자동 백업에서 롤백 + 올바른 환율로 재적용. 수기 환율 입력 fallback (기존 워크플로우로 복귀 가능) |
+
+### S8: 골든 템플릿 binding drift (v0.1.1)
+
+| 항목 | 내용 |
+|---|---|
+| **시나리오** | 26BP 컬럼 헤더가 변경되거나 reference 산출물 시트 구조가 바뀌었는데 `core/template_bindings.py` 가 갱신되지 않아 `apply_golden_template` 가 잘못된 셀에 데이터 채움 |
+| **확률** | 중간 (사내 산출물 양식 갱신 시) |
+| **영향** | 산출물 셀 잘못 채움 → 실무자가 검토 시 발견 가능. 미검토 시 잘못된 보고 가능 |
+| **예방** | (1) `core/template_loader.py` 에서 sidecar `schema_version` + sheet names 비교 → 불일치 시 `TEMPLATE_MALFORMED`. (2) sidecar JSON `formula_count_per_sheet` 변경 감지. (3) Critic 실측: reference 파일에 charts/CF/data_validation 0개 확인됨. 복잡 요소는 merged cells (최대 267)만. Step 3 cell-clearing은 `isinstance(cell, MergedCell)` 스킵 적용. |
+| **탐지** | `apply_golden_template` 시 sheet name mismatch → 즉시 `TEMPLATE_MALFORMED`. CI에서 `scripts/build_fixture_templates.py` 재실행하여 formula_count drift 감지 |
+| **복구** | bindings.py 갱신 + 새 fixture 빌드 + 회귀 테스트 재실행 |
+
+### S9: 골든 템플릿 fixture 빌드 중 수식 손상 (v0.1.1)
+
+| 항목 | 내용 |
+|---|---|
+| **시나리오** | `scripts/build_fixture_templates.py` 의 cell-clearing 로직이 formula cell도 None 처리. 사후 assertion으로 일부 탐지되나 edge case 누락 가능 |
+| **확률** | 낮음 (clearing 룰: `cell.value.startswith("=")` 보존) |
+| **영향** | fixture 손상 → CI 테스트 통과해도 실제 산출물 수식 무력화 |
+| **예방** | (1) Cell-clearing 룰 명시: `if isinstance(cell.value, str) and cell.value.startswith("="): pass`. (2) 빌드 후 reference vs fixture per-sheet formula count 동일 검증. (3) `MergedCell` placeholder 스킵 (top-left anchor만 값 보유). (4) `tests/unit/test_fixture_templates.py::test_formulas_preserved` 가 sidecar count와 fixture count 일치 검증 |
+| **탐지** | 빌드 스크립트 비-zero exit. 테스트 실패 |
+| **복구** | reference 재 다운로드 + 스크립트 재실행 |
+
+### S10: restore_backup 동시성 (v0.1.1)
+
+| 항목 | 내용 |
+|---|---|
+| **시나리오** | User A 가 `write_cells` 실행 중 User B 가 `restore_backup` 같은 `_edited` 경로 타겟. 동시 쓰기로 corruption / data loss |
+| **확률** | 낮음 (stdio 모드 = 단일 사용자. v0.2 HTTP/SSE 시 가능) |
+| **영향** | 파일 손상. 양쪽 작업 실패하거나 garbled |
+| **예방** | (1) `load_workbook_safe()` 에서 `PermissionError` → `FILE_LOCKED`. (2) `restore_backup` in-place 시 pre-restore backup 자동 생성. (3) sha256 ladder: backup-of-current → restore → verify. (4) confirm_overwrite_original=True 게이트로 LLM 우발적 호출 방지 |
+| **탐지** | `FILE_LOCKED` on concurrent access. 사후 sha256 mismatch → `RESTORE_FAILED` |
+| **복구** | pre-restore backup 사용 가능. `.backup/` history 유지 |
 
 ---
 
@@ -1606,11 +1776,19 @@ jobs:
 - 합성 데이터 기반 테스트
 - Live Artifact 출력 옵션 (`render_format` + `artifact_hints`) 전 도구 지원
 
+### v0.1.1 (디자인 드리프트 차단, 현재 출시)
+
+- 3 도구 추가: `apply_golden_template` / `generate_report` / `restore_backup`
+- 골든 템플릿 엔진 (`core/template_bindings.py` + `core/template_loader.py`)
+- 골든 템플릿 fixture: `fixtures/templates/{humax_allocation,humax_account,evcs_account}.xlsx` (데이터 클리어드, 수식/서식 보존)
+- `audited()` decorator `file_path_arg` 확장 (백워드 호환)
+- Pre-mortem S8-S10 추가 (10 시나리오)
+- 총 도구 수 7 → 10
+
 ### v0.2 (적요 활용 + 고급 배부)
 
 - `classify_by_text`: 적요 기반 계정 자동 분류 (적요 PoC H1/H2/H3 통과 시)
 - `allocate_costs`: 배부율 마스터 기반 건별 배부 자동화 (v0.1의 배부율 조회/변경 기반 확장)
-- `restore_backup`: 백업에서 원본 복구 도구
 - PII 마스킹 옵션 (`mask_pii=True`) 내장
 - 금액 마스킹 옵션 (`mask_amounts=True`)
 - CC 마스터 시트 연동 (Description 77% 활용)
@@ -1638,11 +1816,13 @@ jobs:
 
 모듈 7 (Python MCP 제작 입문, 2시간 25분)은 본 설계 문서의 v0.1 범위를 실습 기반으로 전달한다. Revision 2에서 배부율 조회 실습(Live Artifact 출력) 추가로 +15분. Revision 3에서 환율 API 조회 실습 추가로 +10분.
 
+> **Revision 4 강의 정책:** v0.1.1 신규 3 도구 (`apply_golden_template` / `generate_report` / `restore_backup`)는 **기존 모듈 7 (2시간 25분)에 추가하지 않는다**. 디자인 드리프트 차단 / 백업 복구는 사후 시연용 보충 모듈 (15-20분) 또는 v0.2 강의 첫 모듈로 다룬다. 기존 시간 블록 유지.
+
 | 강의 시간 | 내용 | 본 문서 참조 | 강사 제공 | 실무자 작성 |
 |---|---|---|---|---|
 | 0:00-0:20 | MCP 개념 재정리 (1차 복습) | 1. 개요 | 슬라이드 + K-Data MCP 시연 | - |
 | 0:20-0:40 | FastMCP SDK 기본 (`@mcp.tool()`) | 2. 기술 스택 | 코드 예시 + 라이브 코딩 | - |
-| 0:40-1:10 | humax-excel-mcp 설계 해설 (7개 도구) | 4. 도구 상세 Spec | 아키텍처 다이어그램 + 함수 시그니처 | 시그니처 읽기 + 질의 |
+| 0:40-1:10 | humax-excel-mcp 설계 해설 (10개 도구) | 4. 도구 상세 Spec | 아키텍처 다이어그램 + 함수 시그니처 | 시그니처 읽기 + 질의 |
 | 1:10-1:45 | **실습: extract_filtered 작성** | 4.1 + 5. 스키마 매핑 | 템플릿 코드 (빈칸 채우기 형태) | 필터 로직 + 파라미터 검증 작성 |
 | 1:45-1:50 | **시연: verify_sums** (강사 라이브 코딩) | 4.2 | 완성 코드 시연 + 구조 설명 | 관찰 + 질의 |
 | 1:50-2:05 | **실습: get_allocation_rates 조회** (Live Artifact 출력) | 4.6 + 4.5 | 배부율 조회 템플릿 + Live Artifact 결과 시연 | 배부율 조회 호출 + artifact 확인 |
@@ -1785,7 +1965,7 @@ Claude Desktop:
 
 | Pros | Cons |
 |---|---|
-| Python 결정론 + Cowork 자연어 (D1+D2 충족) | 초기 MCP 서버 개발 비용 (강사가 흡수, 7개 도구) |
+| Python 결정론 + Cowork 자연어 (D1+D2 충족) | 초기 MCP 서버 개발 비용 (강사가 흡수, 10개 도구) |
 | 1회 제작 → 전사 배포 (D3 충족) | openpyxl 서식 보존 한계 (실측 필요) |
 | 토큰 70-90% 절감 (필터링) | Phase 0 거버넌스 게이트 의존 |
 | 백업/검증/감사 로그 내장 | 실무자 호출만 (cron 무인은 v0.4) |
@@ -1804,6 +1984,15 @@ Claude Desktop:
 | | 반복 사용 시 일관성 보장 불가 |
 
 > **기각 사유**: D1(학습 곡선)은 충족하나, D2(구조적 해결)의 핵심인 **결정론적 처리**, **감사 로그**, **배치 처리 효율**에서 MCP(Option C)가 근본적으로 우위. Computer Use는 GUI 자동화에 적합하지, 구조화된 데이터 파이프라인에는 부적합.
+
+### 12.3.1 v0.1.1 ADR (Revision 4)
+
+| 결정 | 동인 | 대안 검토 | 채택 사유 | 결과 |
+|---|---|---|---|---|
+| **골든 템플릿 binding 전략 = 하드코딩 pydantic 모델** | 에러 #3 (디자인 드리프트) 결정론 해결; 3 템플릿 타입은 변경 빈도 낮음 | (a) 동적 YAML/JSON binding spec — 유연하나 schema validation 약함, (b) xlwings COM — Windows 종속, CI 차단 | pydantic = 타입 안전 + IDE 자동완성 + 테스트 시점 binding 오류 포착 | `core/template_bindings.py` 3 BINDING 인스턴스 + worked 1 SheetBinding per type |
+| **`restore_backup` 이중 확인 게이트 (side-file default + in-place opt-in)** | P1 원본 보존; LLM 우발적 in-place restore 차단 | (a) shell 스크립트 (CLI 사용자 입력) — Cowork 자연어 호환 X, (b) confirm 단일 플래그 — 안전 약함 | `confirm_overwrite_original=True` + `original_file_path` 양쪽 필요 + 자동 pre-restore backup = 3중 안전 | `tools/restore.py` |
+| **`fixtures/templates/*.xlsx` 커밋 (`.gitignore` 예외)** | CI 신선 체크아웃 후 즉시 테스트 가능; `docs/references/*.xlsx`는 실데이터로 LOCAL ONLY | 매 테스트 빌드 (conftest pattern) — 3-5s CI 오버헤드 | 데이터 클리어드 (8K-22K 셀) + 수식 보존 (22K-38K) → 내부 사용 안전, CI 가속 | `.gitignore:12` exception + `scripts/build_fixture_templates.py` |
+| **`audited()` `file_path_arg` 확장 (기본값 유지)** | 백워드 호환; 신규 3 도구의 첫 인자가 `source_file`/`backup_path`라 audit 키 매핑 필요 | (a) 모든 도구에 `file_path` 인자 강제 — 시그니처 강요 부담, (b) 별도 decorator — 중복 | 단일 파라미터 추가, 기본값으로 기존 7 도구 무수정 | `core/audit.py:38-42` |
 
 ### 12.4 권장 사유
 

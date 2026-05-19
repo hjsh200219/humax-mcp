@@ -6,6 +6,11 @@
 *.parquet
 docs/rfp/
 
+# Fixture templates are structure-only (data values cleared by scripts/build_fixture_templates.py).
+# Formulas preserved; safe to commit for CI tests on fresh checkout.
+# docs/references/*.xlsx remain gitignored — they contain real Humax financial data.
+!fixtures/templates/*.xlsx
+
 # 환경 변수 (API 키, 사내 정보)
 .env
 .env.local

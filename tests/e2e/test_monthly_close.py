@@ -99,3 +99,31 @@ async def test_full_monthly_close_chain(
     # 9) verify_sums on edited file
     verify_after = await verify_sums(str(alloc_out), "예산+실적")
     assert verify_after.success
+
+
+async def test_steps_5_6_7_report_generation(
+    sample_26bp_path: Path,
+    tmp_path: Path,
+) -> None:
+    """E2E Steps 5/6/7 — generate all 3 reports via golden templates."""
+    import time
+
+    from humax_excel_mcp.tools.report import generate_report
+
+    t0 = time.time()
+    outputs = {}
+    for ttype in ("humax_allocation", "humax_account", "evcs_account"):
+        out = tmp_path / f"{ttype}_step.xlsx"
+        res = await generate_report(
+            source_file=str(sample_26bp_path),
+            report_type=ttype,
+            output_path=str(out),
+            month=3,
+            verify_after=False,
+        )
+        assert res.success
+        assert out.exists()
+        outputs[ttype] = out
+    elapsed = time.time() - t0
+    assert elapsed < 60, f"E2E took {elapsed:.1f}s (>60s)"
+    assert len(outputs) == 3

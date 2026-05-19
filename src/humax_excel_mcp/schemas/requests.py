@@ -151,3 +151,41 @@ class ExchangeRequest(BaseModel):
         if not re.match(r"^\d{8}$", v):
             raise ValueError(f"INVALID_DATE_FORMAT: {v}")
         return v
+
+
+TemplateType = Literal["humax_allocation", "humax_account", "evcs_account"]
+
+
+class ApplyTemplateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_file: str
+    template_path: str
+    template_type: TemplateType
+    output_path: str
+    month: int = Field(ge=1, le=12)
+    dry_run: bool = False
+    render_format: RenderFormat = "excel"
+
+
+class GenerateReportRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_file: str
+    report_type: TemplateType
+    output_path: str
+    month: int = Field(ge=1, le=12)
+    dry_run: bool = False
+    verify_after: bool = True
+    render_format: RenderFormat = "excel"
+
+
+class RestoreBackupRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    backup_path: str
+    output_path: str
+    confirm_overwrite_original: bool = False
+    original_file_path: str | None = None
+    dry_run: bool = False
+    render_format: RenderFormat = "excel"

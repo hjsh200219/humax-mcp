@@ -1,0 +1,22 @@
+{
+  "schema_version": "2026.05",
+  "template_type": "evcs_account",
+  "source_reference": "EVCS FC 계정별 실적 (26.03).xlsx",
+  "sheet_names": [
+    "요약",
+    "팀별",
+    "인증대행료",
+    "인증대행료_유럽향 상세(260417)"
+  ],
+  "formula_count_per_sheet": {
+    "요약": 9477,
+    "팀별": 23475,
+    "인증대행료": 1769,
+    "인증대행료_유럽향 상세(260417)": 40
+  },
+  "created_at": "2026-05-19T15:47:16.285051+09:00",
+  "stats": {
+    "data_cells_cleared": 9000,
+    "formula_cells_preserved": 34761
+  }
+}

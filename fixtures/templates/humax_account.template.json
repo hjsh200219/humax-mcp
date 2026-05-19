@@ -1,0 +1,22 @@
+{
+  "schema_version": "2026.05",
+  "template_type": "humax_account",
+  "source_reference": "Humax FC 계정별 실적 (26.03).xlsx",
+  "sheet_names": [
+    "요약",
+    "팀별",
+    "지급수수료",
+    "소모성경비"
+  ],
+  "formula_count_per_sheet": {
+    "요약": 3879,
+    "팀별": 17937,
+    "지급수수료": 6413,
+    "소모성경비": 9555
+  },
+  "created_at": "2026-05-19T15:47:14.891566+09:00",
+  "stats": {
+    "data_cells_cleared": 21946,
+    "formula_cells_preserved": 37784
+  }
+}
