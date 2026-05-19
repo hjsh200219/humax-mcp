@@ -9,9 +9,10 @@ import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.cell.cell import MergedCell
 
+from ..core import aggregator, errors, excel_io
 from ..core import artifact_hints as ah
 from ..core import backup as backup_mod
-from ..core import errors, excel_io
+from ..core.excel_io import detect_source_format
 from ..core.template_bindings import SheetBinding
 from ..core.template_loader import load_template
 from ..schemas.responses import (
@@ -87,6 +88,8 @@ async def apply_golden_template(
     month: int,
     dry_run: bool = False,
     render_format: Literal["excel", "live_artifact", "both"] = "excel",
+    source_format: Literal["auto", "raw", "aggregated"] = "auto",
+    expand_evcs: bool = False,
 ) -> ApplyTemplateResult:
     """Apply a golden template to source 26BP data — deterministic, zero design drift."""
     if not 1 <= month <= 12:
@@ -107,14 +110,51 @@ async def apply_golden_template(
     if not dry_run:
         backup_path = backup_mod.create_backup(src)
 
-    src_wb = excel_io.load_workbook_safe(src, data_only=True)
+    # read_only=True: source is input-only, never mutated. Avoids ~2GB / multi-minute
+    # full-formula evaluation pass on large real-data files (15k+ rows).
+    src_wb = excel_io.load_workbook_safe(src, data_only=True, read_only=True)
     sheet_name = "예산+실적"
     if sheet_name not in src_wb.sheetnames:
         raise errors.SheetNotFound(
             f"source_file에 '{sheet_name}' 시트가 없습니다. 사용 가능: {src_wb.sheetnames}"
         )
     src_ws = src_wb[sheet_name]
-    df = excel_io.worksheet_to_dataframe(src_ws)
+
+    # Determine source format and load DataFrame accordingly
+    if source_format == "auto":
+        fmt, hdr_row = detect_source_format(src_ws)
+    elif source_format == "raw":
+        fmt, hdr_row = "raw", None
+    elif source_format == "aggregated":
+        fmt, hdr_row = "aggregated", 1
+    else:
+        raise errors.SchemaMismatch(f"Unknown source_format: {source_format}")
+
+    if fmt == "aggregated":
+        df = excel_io.worksheet_to_dataframe(src_ws)
+        # Validate that the df actually has aggregated-format columns
+        if source_format == "aggregated":
+            required_keys = {"company", "gl_account", "cost_center"}
+            present = set(df.columns)
+            if len(required_keys & present) < 3:
+                raise errors.SchemaMismatch(
+                    f"source_format='aggregated' が指定されましたが、bp26スキーマのキー ({sorted(required_keys)}) が "
+                    f"列に見つかりません。実際の列: {list(df.columns)[:10]}"
+                )
+    elif fmt == "raw":
+        raw_df = excel_io.worksheet_to_dataframe(
+            src_ws,
+            header_row=hdr_row,
+            schema_module="raw_bp26",
+        )
+        agg_result = aggregator.aggregate_to_bp26(
+            raw_df,
+            target_month=month,
+            expand_evcs=expand_evcs,
+        )
+        df = agg_result.df
+    else:
+        raise errors.SchemaMismatch(f"Unknown source_format: {fmt}")
 
     sheets_processed: list[TemplateBindingSummary] = []
     for sb in binding.sheets:

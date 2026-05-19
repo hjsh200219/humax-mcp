@@ -183,3 +183,80 @@ def test_summary_models() -> None:
     assert ws.applied == 5
     wv = WriteVerification(verified=True)
     assert wv.mismatches == []
+
+
+class TestRawBP26Schema:
+    REAL_ROW3 = [
+        "구분", "Year", "Month", "Company\nCode", "본사/법인", "Company",
+        "Posting Date", "Doc no.", "Cost Center", "Cost Ctr Name", "대조직",
+        "배부조직", "보고용", "보고용(re)", "G/L Account", "소계정", "대계정",
+        "대계정(re)", "구분", "분류", "통화\n(Doc)", "Amount\n(Doc)",
+        "통화\n(KRW)", "Amount\n(KRW)", "Text", "Reversed\nwith", "Vendor\nName",
+        "URL", "비고", "배부기준",
+        "STB\n(배부율)", "Mobility\n(배부율)", "EVCS(국내)\n(배부율)",
+        "EVCS(해외)\n(배부율)", "공통\n(배부율)", "건물\n(배부율)",
+        "H.Mobility\n(배부율)", "H.EV\n(배부율)", "하이파킹\n(배부율)",
+        "피플카\n(배부율)", "위너콤\n(배부율)", "홀딩스\n(배부율)",
+        "H.Networks\n(배부율)", "TOTAL\n(배부율)", "▶",
+        "STB", "Mobility", "EVCS(국내)", "EVCS(해외)", "공통", "건물",
+        "H.Mobility", "H.EV", "하이파킹", "피플카", "위너콤", "홀딩스",
+        "H.Networks", "TOTAL", "▶", "EVCS", "Shared", None,
+    ]
+
+    def test_column_map_size_and_scope(self):
+        from humax_excel_mcp.schemas import raw_bp26
+        # ~48 mapped columns (excluding allocation_amount).
+        assert 40 <= len(raw_bp26.COLUMN_MAP) <= 60
+        # ALLOCATION_AMOUNT_COLUMNS deliberately empty/minimal.
+        assert len(raw_bp26.ALLOCATION_AMOUNT_COLUMNS) == 0
+
+    def test_normalize_real_row3_known_keys(self):
+        from humax_excel_mcp.schemas import raw_bp26
+        out = raw_bp26.normalize_headers(self.REAL_ROW3)
+        assert out[0] == "division_type"
+        assert out[1] == "year"
+        assert out[5] == "company"
+        assert out[8] == "cost_center"
+        assert out[14] == "gl_account"
+        assert out[23] == "amount_krw"
+
+    def test_duplicate_gubun_position_aware(self):
+        from humax_excel_mcp.schemas import raw_bp26
+        out = raw_bp26.normalize_headers(self.REAL_ROW3)
+        assert out[0] == "division_type"
+        assert out[18] == "expense_type"
+
+    def test_validate_headers_empty_diff_for_required(self):
+        from humax_excel_mcp.schemas import raw_bp26
+        diffs = raw_bp26.validate_headers(self.REAL_ROW3)
+        assert diffs == []
+
+    def test_validate_headers_missing_required(self):
+        from humax_excel_mcp.schemas import raw_bp26
+        partial = ["Year", "Month", "Company"]
+        diffs = raw_bp26.validate_headers(partial)
+        assert any(d.startswith("MISSING:") for d in diffs)
+
+    def test_pii_columns_count_and_content(self):
+        from humax_excel_mcp.schemas import raw_bp26
+        assert len(raw_bp26.PII_COLUMNS) == 4
+        assert "Text" in raw_bp26.PII_COLUMNS
+        assert "URL" in raw_bp26.PII_COLUMNS
+        assert "Doc no." in raw_bp26.PII_COLUMNS
+        assert "Vendor\nName" in raw_bp26.PII_COLUMNS
+        # reversed_with is NOT PII (audit)
+        assert "Reversed\nwith" not in raw_bp26.PII_COLUMNS
+
+    def test_month_map_all_12_months(self):
+        from humax_excel_mcp.schemas import raw_bp26
+        for m in range(1, 13):
+            assert raw_bp26.MONTH_MAP[f"{m}월"] == m
+
+    def test_bp26_unmodified(self):
+        # Witness: bp26 SCHEMA_VERSION unchanged from v0.1
+        from humax_excel_mcp.schemas import bp26
+        assert bp26.SCHEMA_VERSION == "2026.05"
+
+    def test_valid_humax_companies(self):
+        from humax_excel_mcp.schemas import raw_bp26
+        assert raw_bp26.VALID_HUMAX_COMPANIES == ["HKR", "HMX", "HUS", "HUK", "HBR", "HSZ"]

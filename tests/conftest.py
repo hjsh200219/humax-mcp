@@ -5,6 +5,7 @@ from __future__ import annotations
 import random
 from pathlib import Path
 
+import pandas as pd
 import pytest
 from openpyxl import Workbook
 
@@ -183,3 +184,35 @@ def empty_xlsx(tmp_path: Path) -> Path:
     ws.append(_full_header_row())
     wb.save(p)
     return p
+
+
+@pytest.fixture
+def synthetic_raw_26bp_df() -> pd.DataFrame:
+    """Synthetic raw 26BP-shaped DataFrame: 3 months, 2 companies, 3 cost centers,
+    2 gl accounts. Returns DataFrame in canonical normalized keys (post raw_bp26.normalize_headers).
+    """
+    import pandas as pd
+
+    rows = []
+    for company in ["HKR", "HMX"]:
+        for cc in [101, 102, 103]:
+            for gl in [510000, 520000]:
+                for month_int, month_str in [(1, "1월"), (2, "2월"), (3, "3월")]:
+                    for div in ["예산", "실적"]:
+                        rows.append({
+                            "division_type": div,
+                            "year": "26년",
+                            "month": month_str,
+                            "company": company,
+                            "cost_center": cc,
+                            "cost_center_name": f"CC{cc}",
+                            "gl_account": gl,
+                            "gl_account_name": f"GL{gl}",
+                            "org_l1": "사업그룹",
+                            "amount_krw": 1000.0 * month_int * (2 if div == "예산" else 1),
+                            "rate_stb": 25.0,
+                            "rate_mobility": 25.0,
+                            "rate_evcs_domestic": 30.0,
+                            "rate_evcs_overseas": 20.0,
+                        })
+    return pd.DataFrame(rows)

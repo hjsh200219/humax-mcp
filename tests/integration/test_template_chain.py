@@ -100,3 +100,103 @@ async def test_extract_apply_verify_diff_chain(
         threshold_million=0.001,
     )
     assert diff_res.success
+
+
+async def test_template_chain_raw_to_aggregated_then_template(tmp_path: Path) -> None:
+    """US-024: Build a row-3-header file in-memory, run generate_report with source_format='auto',
+    confirm output non-empty."""
+    from openpyxl import Workbook
+
+    p = tmp_path / "raw_like.xlsx"
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "예산+실적"
+    ws.append(["title"])
+    ws.append(["subtitle"])
+    ws.append([
+        "구분", "Year", "Month", "Company\nCode", "본사/법인", "Company",
+        "Posting Date", "Doc no.", "Cost Center", "Cost Ctr Name", "대조직",
+        "배부조직", "보고용", "보고용(re)", "G/L Account", "소계정", "대계정",
+        "대계정(re)", "구분", "분류", "통화\n(Doc)", "Amount\n(Doc)",
+        "통화\n(KRW)", "Amount\n(KRW)", "Text", "Reversed\nwith", "Vendor\nName",
+        "URL", "비고", "배부기준",
+        "STB\n(배부율)", "Mobility\n(배부율)", "EVCS(국내)\n(배부율)",
+        "EVCS(해외)\n(배부율)", "공통\n(배부율)", "건물\n(배부율)",
+        "H.Mobility\n(배부율)", "H.EV\n(배부율)", "하이파킹\n(배부율)",
+        "피플카\n(배부율)", "위너콤\n(배부율)", "홀딩스\n(배부율)",
+        "H.Networks\n(배부율)", "TOTAL\n(배부율)",
+    ])
+    # 2 data rows
+    base = [
+        "실적", "26년", "1월", 1000, "본사", "HKR", None, None, 101, "CC101",
+        "사업그룹", None, None, None, 510000, "GL510000", "대계정A", None,
+        "실적", "분류A", "KRW", 1000, "KRW", 1000.0,
+        None, None, None, None, None, None,
+        25.0, 25.0, 30.0, 20.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100.0,
+    ]
+    ws.append(base)
+    ws.append(base)
+    wb.save(p)
+
+    out = tmp_path / "report_out.xlsx"
+    result = await generate_report(
+        source_file=str(p),
+        report_type="humax_account",
+        output_path=str(out),
+        month=1,
+        source_format="auto",
+        verify_after=False,
+    )
+    assert result.output_path is not None
+    assert out.exists()
+
+
+async def test_template_chain_explicit_aggregated_on_synthetic(
+    sample_26bp_path: Path, tmp_path: Path
+) -> None:
+    """US-024: Synthetic fixture (row 1 headers) with source_format='auto' works."""
+    out = tmp_path / "synth_out.xlsx"
+    result = await generate_report(
+        source_file=str(sample_26bp_path),
+        report_type="humax_account",
+        output_path=str(out),
+        month=3,
+        source_format="auto",
+        verify_after=False,
+    )
+    assert result.output_path is not None
+
+
+def test_explicit_aggregated_on_raw_data_raises_schema_mismatch(tmp_path):
+    """US-024 AC9: source_format='aggregated' on raw-header file → SchemaMismatch."""
+    import asyncio
+
+    from openpyxl import Workbook
+
+    from humax_excel_mcp.core import errors
+
+    p = tmp_path / "raw_like.xlsx"
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "예산+실적"
+    ws.append(["title"])  # row 1 — not headers
+    ws.append(["subtitle"])  # row 2
+    ws.append([
+        "구분", "Year", "Month", "Company\nCode", "본사/법인", "Company",
+        "Posting Date", "Doc no.", "Cost Center", "Cost Ctr Name", "대조직",
+        "G/L Account", "Amount\n(KRW)",
+    ])  # row 3 — actual headers
+    ws.append(["실적", "26년", "1월", 1000, "본사", "HKR", None, None, 101, "CC101",
+                "사업그룹", 510000, 1000.0])
+    wb.save(p)
+
+    out = tmp_path / "out.xlsx"
+    with pytest.raises(errors.SchemaMismatch):
+        asyncio.run(generate_report(
+            source_file=str(p),
+            report_type="humax_account",
+            output_path=str(out),
+            month=1,
+            source_format="aggregated",  # explicit, should fail because row 1 is title not headers
+            verify_after=False,
+        ))

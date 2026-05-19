@@ -170,3 +170,46 @@ async def test_invalid_month(sample_26bp_path: Path, tmp_path: Path) -> None:
             output_path=str(tmp_path / "out.xlsx"),
             month=13,
         )
+
+
+@pytest.mark.asyncio
+async def test_humax_account_filter_matches_valid_humax_companies() -> None:
+    """US-025 AC5: humax_account filter_values matches raw_bp26.VALID_HUMAX_COMPANIES."""
+    from humax_excel_mcp.core.template_bindings import HUMAX_ACCOUNT_BINDING
+    from humax_excel_mcp.schemas import raw_bp26
+
+    sheet = HUMAX_ACCOUNT_BINDING.sheets[0]
+    assert sheet.row_selection.filter_values == raw_bp26.VALID_HUMAX_COMPANIES
+    assert sheet.row_selection.filter_values == ["HKR", "HMX", "HUS", "HUK", "HBR", "HSZ"]
+
+
+@pytest.mark.asyncio
+async def test_aggregated_from_raw_flow_through_bindings(tmp_path: Path) -> None:
+    """US-025 AC3: aggregator output flows through existing bindings."""
+    import pandas as pd
+
+    from humax_excel_mcp.core.aggregator import aggregate_to_bp26
+    from humax_excel_mcp.core.template_bindings import HUMAX_ACCOUNT_BINDING
+
+    # Tiny raw df: HKR, one CC, one GL
+    raw = pd.DataFrame([{
+        "division_type": "실적",
+        "year": "26년",
+        "month": "1월",
+        "company": "HKR",
+        "cost_center": 101,
+        "cost_center_name": "CC101",
+        "gl_account": 510000,
+        "gl_account_name": "GL510000",
+        "org_l1": "사업그룹",
+        "amount_krw": 1000.0,
+        "rate_evcs_domestic": 0.0,
+        "rate_evcs_overseas": 0.0,
+    }])
+    result = aggregate_to_bp26(raw, target_month=3, expand_evcs=False)
+    binding_sheet = HUMAX_ACCOUNT_BINDING.sheets[0]
+    # All column_map source keys must be present in aggregator output
+    for source_key in binding_sheet.column_map.values():
+        assert source_key in result.df.columns, f"Missing key in aggregator output: {source_key}"
+    # HKR present (6-company filter accepts it)
+    assert "HKR" in result.df["company"].values

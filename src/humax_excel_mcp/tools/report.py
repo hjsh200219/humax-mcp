@@ -30,6 +30,7 @@ async def generate_report(
     verify_after: bool = True,
     render_format: Literal["excel", "live_artifact", "both"] = "excel",
     template_dir: str | None = None,
+    source_format: Literal["auto", "raw", "aggregated"] = "auto",
 ) -> GenerateReportResult:
     """End-to-end report generation: 26BP -> golden template -> verify."""
     template_path = _resolve_template_path(report_type, template_dir)
@@ -39,6 +40,8 @@ async def generate_report(
             f"build_fixture_templates.py를 실행하세요."
         )
 
+    expand_evcs = report_type == "evcs_account"
+
     apply_res = await apply_golden_template(
         source_file=source_file,
         template_path=str(template_path),
@@ -47,6 +50,8 @@ async def generate_report(
         month=month,
         dry_run=dry_run,
         render_format="excel",
+        source_format=source_format,
+        expand_evcs=expand_evcs,
     )
 
     verification_summary = None

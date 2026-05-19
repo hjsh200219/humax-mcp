@@ -89,7 +89,10 @@ HUMAX_ACCOUNT_BINDING = TemplateBinding(
             row_key=["gl_account"],
             row_selection=RowSelection(
                 filter_column="company",
-                filter_values=["HMX"],
+                # Q9 decision (v0.1.2): Humax 계열 6사 전체 포함. Real 26BP의 주요
+                # 조직은 HKR (12883 rows). HMX 단일로는 48 rows로 빈 산출물 위험.
+                # raw_bp26.VALID_HUMAX_COMPANIES와 일치 유지 필요.
+                filter_values=["HKR", "HMX", "HUS", "HUK", "HBR", "HSZ"],
                 sort_by=["gl_account"],
             ),
         ),

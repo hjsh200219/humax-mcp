@@ -3,14 +3,19 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import pandas as pd
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
 
-from ..schemas import bp26
+from ..schemas import bp26, raw_bp26
 from . import errors
+
+_SCHEMA_MODULES: dict[str, Any] = {"bp26": bp26, "raw_bp26": raw_bp26}
+
+_AUTO_DETECT_MIN_MATCHES = 5
+_AUTO_DETECT_SCAN_ROWS = 10
 
 
 def assert_xlsx_path(path: str | Path) -> Path:
@@ -47,13 +52,14 @@ def get_sheet(wb: Workbook, sheet_name: str):
     return wb[sheet_name]
 
 
-def worksheet_to_dataframe(ws, *, normalize: bool = True) -> pd.DataFrame:
-    """Read a worksheet into a DataFrame using row 1 as headers."""
-    rows = list(ws.iter_rows(values_only=True))
-    if not rows:
-        return pd.DataFrame()
-    raw_headers = [str(h) if h is not None else "" for h in rows[0]]
-    headers = bp26.normalize_headers(raw_headers) if normalize else raw_headers
+def _count_schema_matches(row: tuple, schema_module: Any) -> int:
+    """Count how many cells in a row match keys in the schema's COLUMN_MAP."""
+    keys = set(schema_module.COLUMN_MAP.keys())
+    return sum(1 for cell in row if str(cell) if str(cell) in keys)
+
+
+def _dedup_headers(headers: list[str]) -> list[str]:
+    """Deduplicate headers by appending __N suffixes."""
     seen: dict[str, int] = {}
     deduped: list[str] = []
     for h in headers:
@@ -63,7 +69,66 @@ def worksheet_to_dataframe(ws, *, normalize: bool = True) -> pd.DataFrame:
         else:
             seen[h] = 0
             deduped.append(h)
-    data = rows[1:]
+    return deduped
+
+
+def worksheet_to_dataframe(
+    ws,
+    *,
+    header_row: int | None = None,
+    schema_module: str = "bp26",
+    normalize: bool = True,
+) -> pd.DataFrame:
+    """Read a worksheet into a DataFrame.
+
+    Behavior matrix:
+    - Default (header_row=None, schema_module="bp26"):
+        Backward-compat path. Uses row 1 as header directly. No auto-detect,
+        no SchemaMismatch raise (preserves v0.1/v0.1.1 callers behavior).
+    - schema_module="raw_bp26", header_row=None:
+        Auto-detect: scan rows 1.._AUTO_DETECT_SCAN_ROWS for the row with the
+        most schema-key matches. Pick the first row with >= _AUTO_DETECT_MIN_MATCHES.
+        Raise SchemaMismatch if none qualify.
+    - header_row=N (explicit):
+        Use row N as header. Skip auto-detect.
+    """
+    rows = list(ws.iter_rows(values_only=True))
+    if not rows:
+        return pd.DataFrame()
+
+    mod = _SCHEMA_MODULES.get(schema_module, bp26)
+
+    # Determine which row is the header (0-indexed internally)
+    if header_row is not None:
+        # Explicit: use the given 1-indexed row number
+        hdr_idx = header_row - 1
+    elif schema_module == "bp26":
+        # Backward-compat: always row 1
+        hdr_idx = 0
+    else:
+        # Auto-detect: scan up to _AUTO_DETECT_SCAN_ROWS rows
+        hdr_idx = None
+        scan_limit = min(_AUTO_DETECT_SCAN_ROWS, len(rows))
+        for i in range(scan_limit):
+            if _count_schema_matches(rows[i], mod) >= _AUTO_DETECT_MIN_MATCHES:
+                hdr_idx = i
+                break
+        if hdr_idx is None:
+            raise errors.SchemaMismatch(
+                f"헤더 행 자동감지 실패: 행 1-{scan_limit} 중 schema '{schema_module}' "
+                f"키 {_AUTO_DETECT_MIN_MATCHES}개 이상 일치하는 행 없음. "
+                "header_row= 로 직접 지정하거나 올바른 파일인지 확인하세요."
+            )
+
+    raw_headers = [str(h) if h is not None else "" for h in rows[hdr_idx]]
+
+    if normalize:
+        headers = mod.normalize_headers(raw_headers)
+    else:
+        headers = raw_headers
+
+    deduped = _dedup_headers(headers)
+    data = rows[hdr_idx + 1 :]
     return pd.DataFrame(data, columns=deduped)
 
 
@@ -90,6 +155,34 @@ def validate_schema(
                 f"누락: {sorted(absent)}"
             )
     return diffs
+
+
+def detect_source_format(ws) -> tuple[Literal["aggregated", "raw"], int]:
+    """Detect whether a worksheet is aggregated (bp26) or raw (raw_bp26).
+
+    Returns (format_name, 1-indexed header row number).
+
+    Raises SchemaMismatch if no row in 1-10 matches any known schema.
+    """
+    rows = list(ws.iter_rows(values_only=True))
+    if not rows:
+        raise errors.SchemaMismatch(
+            "Source format undetectable: no row in 1-10 matches any known schema"
+        )
+
+    # Try aggregated: bp26 matches on row 1
+    if _count_schema_matches(rows[0], bp26) >= _AUTO_DETECT_MIN_MATCHES:
+        return ("aggregated", 1)
+
+    # Try raw: scan rows 1-10 for raw_bp26 matches
+    scan_limit = min(_AUTO_DETECT_SCAN_ROWS, len(rows))
+    for i in range(scan_limit):
+        if _count_schema_matches(rows[i], raw_bp26) >= _AUTO_DETECT_MIN_MATCHES:
+            return ("raw", i + 1)
+
+    raise errors.SchemaMismatch(
+        "Source format undetectable: no row in 1-10 matches any known schema"
+    )
 
 
 def cell_to_value(value: Any) -> Any:
