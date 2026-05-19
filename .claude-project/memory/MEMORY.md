@@ -7,3 +7,5 @@
 - [검증 순서: schema → empty → rule](validation-order-schema-first.md) — SCHEMA_MISMATCH가 empty 체크보다 먼저
 - [다중 키 diff fixture 변형 규칙](pandas-multi-key-diff-pattern.md) — key 컬럼은 양쪽 동기 변경
 - [Excel write 4중 안전 패턴](write-tool-output-path-safety.md) — backup + output_path 검증 + dry_run + post-verify
+- [골든 템플릿 엔진 패턴 (v0.1.1)](golden-template-engine-pattern.md) — 디자인 드리프트 차단: binding + sidecar + fixture build
+- [audited() file_path_arg 확장 (v0.1.1)](audited-file-path-arg-extension.md) — 신규 도구의 첫 인자 매핑 파라미터
