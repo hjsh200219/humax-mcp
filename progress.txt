@@ -1,0 +1,70 @@
+## humax-excel-mcp v0.1 implementation — Ralph TDD session
+
+### Completed (all 14 stories pass)
+
+US-001 scaffolding
+- pyproject.toml: humax-excel-mcp 0.1.0, py>=3.10, deps mcp/openpyxl/pandas/pydantic/python-dotenv/httpx, test extras pytest/pytest-asyncio/pytest-httpx, ruff
+- src/humax_excel_mcp/ + tools/ + schemas/ + core/ + tests/{unit,integration,e2e}
+- .env.example with EXCHANGE_RATE_API_KEY placeholder
+- `pip install -e .[test]` succeeded; pytest collects 130 tests
+
+US-002 schemas (pydantic v2)
+- bp26.SCHEMA_VERSION="2026.05", COLUMN_MAP 61 cols (8 struct + 50 monthly + 3 text), ALLOCATION_RATE_COLUMNS 4
+- requests.py: ExtractRequest, VerifyRequest, WriteRequest, DiffRequest, AllocGetRequest, AllocSetRequest, ExchangeRequest, CellUpdate, AllocationUpdate
+- responses.py: ExtractResult, VerifyResult, WriteResult, DiffResult, AllocationRatesResult, AllocationUpdateResult, ExchangeRatesResult, ArtifactHints
+
+US-003 fixtures (synthetic 26BP via conftest.py)
+- sample_26bp_path / prev_month_path / curr_month_path / empty_xlsx
+- 4 BUs × 3 big × 3 mid × 2 small × 2 rows = 144 detail rows + 총합계 subtotal
+- Allocation rates seeded as fixed-sum=100 combos
+
+US-004 core/excel_io.py + core/backup.py + core/errors.py
+- Custom HumaxMCPError hierarchy keyed by PRD error codes
+- load_workbook_safe handles FILE_NOT_FOUND, FILE_LOCKED via PermissionError
+- worksheet_to_dataframe normalizes headers via bp26.normalize_headers, dedupes collisions
+- create_backup with sha256 verification, BACKUP_FAILED on any mismatch
+
+US-005 token_guard + artifact_hints helpers
+- SOFT 50KB / HARD 100KB, estimate_size_kb + estimate_tokens
+- PII regex: RRN, KR phone, sabun, RRN word
+- auto_truncate by max_rows then by size
+- build_hints + maybe_hints (returns None for excel-only render_format)
+
+US-006 extract_filtered (15 tests)
+US-007 verify_sums (7 tests) — bottom-up sum from 소조직 detail rows
+US-008 write_cells (13 tests) — backup-always, output_path != file_path enforced, dry_run sha-stable
+US-009 generate_diff_candidates (7 tests) — sorted abs(diff) desc, comment patterns "[code] [name] ±N백만 (대폭 ±N%)"
+US-010 get_allocation_rates (9 tests) — groups by (cc, basis, rates), rate_sum within 0.01 tolerance
+US-011 update_allocation_rates (10 tests) — same safety as write_cells, only C31-C34 cells touched
+US-012 get_exchange_rates (15 tests) — pytest-httpx mocked, comma-string parsing, 7-day fallback, JPY(100) normalization, 12h cache, ±20% sanity check
+US-013 server.py + audit (3 integration tests) — FastMCP registers 7 tools, JSONL audit per call
+US-014 E2E (1 test) — extract→verify→write→diff→alloc_get→alloc_set(dry)→alloc_set(apply)→alloc_get(after)→verify chain green
+
+### Learnings (codebase patterns)
+
+- pytest-httpx 0.36 uses `url=re.compile(...)`, NOT `url__regex=...` (test_exchange.py)
+- Schema-mismatch checks must run BEFORE df-empty checks (allocation_get.py)
+- Diff candidates need key cols (company+cc+gl) present on BOTH files; mutate gl_account on both sides before bumping value (test_diff.py)
+- Fallback chain count = 1 initial + N attempts = 8 mocks for 7-day fallback exhaustion
+- Subagent delegation NOT triggered (user invoked /ralph /tdd in interactive mode with caveman); direct Write/Edit OK because soft warnings only
+- Live API key in .env (EXCHANGE_RATE_API_KEY) — tests must monkeypatch + bypass config.load_env() to assert API_KEY_MISSING
+
+### Files
+
+src/humax_excel_mcp/
+  __init__.py, config.py, server.py
+  tools/__init__.py, extract.py, verify.py, write.py, diff.py, allocation_get.py, allocation_set.py, exchange.py
+  schemas/__init__.py, bp26.py, requests.py, responses.py
+  core/__init__.py, errors.py, excel_io.py, backup.py, token_guard.py, artifact_hints.py, audit.py
+tests/
+  conftest.py, __init__.py
+  unit/test_{schemas,fixtures,excel_io,backup,token_guard,artifact_hints,extract,verify,write,diff,allocation_get,allocation_set,exchange}.py
+  integration/test_mcp_server.py
+  e2e/test_monthly_close.py
+pyproject.toml, .env.example
+
+### Test counts
+- unit: 126 tests
+- integration: 3 tests
+- e2e: 1 test
+- total: 130 passed in 9.29s
