@@ -1,108 +1,79 @@
 ---
-created: 2026-05-19T23:05:00+09:00
-project: humax-mcp
-summary: harness engineering 셋업 + GC 2회 (L3 → L4 진입). source code 무수정, docs/scripts/config 추가만. 234 tests pass, 88.70% cov, vulture clean, pre-commit installed. Commit c18e05a push 완료.
+created: 2026-05-26T13:00:00+09:00
+project: humax-excel-mcp
+summary: Humax 재무팀 4회×2h 자동화 강의 교안 v2 작성 (466 lines, 자동화 19회 강조). DRI 모델 (Desktop→Remote→IDE) 4단계 스택. pandoc .docx 변환본 동봉. Commit c73ceab push 완료.
 ---
 
 ## Session Digest
 
-humax-excel-mcp에 agent-first harness 셋업. 기존 source code (src/, tests/, docs/prd/, README, progress.txt) 전혀 손대지 않고 다음을 추가: AGENTS.md (110 lines map), CLAUDE.md → AGENTS.md symlink, ARCHITECTURE.md (L1-L5 레이어), .claudeignore, .pre-commit-config.yaml, docs/ 하위 15개 파일 (QUALITY/RELIABILITY/SECURITY/PRODUCT_SENSE/PLANS + design-docs + exec-plans + generated/schema-snapshot + harness/{principles, maturity-framework, fix-catalog, gc-history, harness-setup}), scripts/{verify_docs.py, gc.sh}.
+humax-excel-mcp 본 코드는 손대지 않고, 사내 재무팀 대상 4회×2h (총 8h) 자동화 강의 교안을 신규 작성. `docs/prd/humax-lecture-plan-v2.md` (466 lines) + pandoc 변환 .docx (20KB) 동봉.
 
-GC #1 (베이스라인): 63.75 / L3 Enforced. 약점 Top3: P6 Coverage=4, P3 Invariant=5, P7 GC-Auto=5.
+설계 골격: **DRI 모델** (Desktop → Remote → IDE) 3축으로 도구 학습 곡선 분리. 4회차 스택 누적:
+- **1회 Desktop full**: Claude Desktop + MCP 기본기 (humax-excel-mcp stdio 연결, 자연어 호출)
+- **2회 VS Code + Claude Code**: IDE 통합 + agent 위임 패턴
+- **3회 API + Git**: Anthropic API 직접 호출 + 버전 관리 워크플로
+- **4회 SQL + Next.js + Vercel**: 사내 데이터 → 웹 대시보드 배포까지
 
-TD-001/002/003 해소 작업:
-- pyproject.toml에 pytest-cov + vulture + pre-commit 추가, [tool.coverage] / [tool.vulture] 설정 등록
-- 실측 88.70% coverage (gate 70%+)
-- vulture clean (pydantic v2 false positive ignore_names로 해소)
-- pre-commit install 실행, ruff hooks + xlsx/.env 차단 hooks 활성
+핵심 메시지: 재무팀 실무자가 LLM "자동화"로 결산/리포팅을 단계적으로 자동화 (키워드 19회 반복 강조). 편집 3회 거쳐 메타 헤더 제거 / 자동화 목표 강화 / 클로징 메시지 4개 제거 (군더더기 정리).
 
-GC #2 (해소 후): 70.4 / **L4 Optimized** (+6.65). P6: 4→8, P3: 5→7, P7: 5→7.
-
-신규 발견 TD-012 (도구 15 함수 >50줄), TD-013 (progress.txt 잔존).
-
-Commit c18e05a (24 files, 1587+ lines) push 완료. Pre-commit 첫 run에서 scripts/verify_docs.py 자동 reformat 발생 (신규 파일이라 OK).
+Commit c73ceab 단일 push 완료. 본 MCP 서버 source code / tests / harness 모두 무수정.
 
 ## Progress
 
 ### 완료
-- [x] AGENTS.md / CLAUDE.md symlink / ARCHITECTURE.md / .claudeignore 신규 생성
-- [x] docs/ 15개 파일 (5 routes + 2 design-docs + 2 exec-plans + 1 generated + 5 harness)
-- [x] scripts/verify_docs.py (4 게이트: 도구 수 / 스키마 버전 / 레이어 import / AGENTS.md 크기)
-- [x] scripts/gc.sh (ruff + pytest+cov + vulture + verify-docs 통합)
-- [x] .pre-commit-config.yaml (ruff + 사내 데이터/.env 차단)
-- [x] pyproject.toml [tool.coverage] / [tool.vulture] 등록 (기존 deps 보존)
-- [x] pre-commit install (TD-003 해소)
-- [x] pytest-cov 실측 88.70% (TD-001 해소)
-- [x] vulture clean (TD-002 해소, pydantic v2 ignore 패턴 등록)
-- [x] GC #1 + GC #2 시행, gc-history.md 4행 기록
-- [x] progress.txt 내용을 docs/exec-plans/completed/v0.1.0-tdd-session.md로 이관
-- [x] Memory 2건 신규 추가: vulture-pydantic-v2-false-positives, ruff-format-as-advisory-not-blocking
-- [x] commit c18e05a, push 3543e9d..c18e05a
+- [x] `docs/prd/humax-lecture-plan-v2.md` 초안 작성 (4회×2h 구조)
+- [x] DRI 모델 (Desktop→Remote→IDE) 3축 도구 분리 정의
+- [x] 1회차 Desktop full (Claude Desktop + MCP 자연어 호출)
+- [x] 2회차 VS Code + Claude Code (IDE agent 위임)
+- [x] 3회차 Anthropic API + Git (직접 호출 + 버전 관리)
+- [x] 4회차 SQL + Next.js + Vercel (데이터 → 웹 배포)
+- [x] pandoc로 .docx 변환본 생성 (20KB, 사내 배포용)
+- [x] 편집 3회: 메타 헤더 제거 / "자동화" 목표 강화 / 클로징 메시지 4개 제거
+- [x] "자동화" 키워드 19회 노출 확인 (메시지 일관성)
+- [x] commit c73ceab, push origin/main
 
 ### 미완료
-- [ ] **TD-012 (도구 함수 >50줄)**: 15 함수 (4개 100줄+: extract_filtered=154, apply_golden_template=154, verify_sums=145, allocation_set=123). 비즈니스 helper 추출 검토. 회의적: workflow orchestrator는 자연 증가 — 선택적 분할.
-- [ ] **TD-013 (progress.txt 잔존)**: 이관 사본 작성됨, 원본 삭제는 사용자 결정.
-- [ ] **README.md PowerShell-only**: Mac/Linux 진입 마찰 (TD-011, P3).
-- [ ] **L5 진입 (80+)**: 잔존 약점 P5 Disclosure (ADR 없음), P9 Knowledge (용어집 없음). 다음 sprint 후보.
+- [ ] **사내 리허설 미실시**: 실제 재무팀원 대상 1회차 dry-run 필요. 2h 페이싱 / MCP 설치 시간 / Q&A 비중 검증.
+- [ ] **회차별 실습 자산 분리**: 현재는 교안 1파일. 회차별 `samples/`, `exercises/`, `solutions/` 폴더 미생성.
+- [ ] **사내 데이터 마스킹 샘플**: 1회차 실습용 PII 제거된 xlsx 미준비 (현재 `docs/references/` 원본은 git push 금지).
+- [ ] **3회차 API key 정책**: Anthropic API 키 사내 발급/공유 절차 미정. `.env` 템플릿만 존재.
+- [ ] **4회차 Vercel 권한**: 사내 계정 / 도메인 정책 미확인.
 
 ## Next Steps
 
-1. **TD-012 진단**: 4개 100줄+ 도구의 분기 복잡도 측정 후 helper 추출 PR 1건씩 (input validation / load / business / response build 단계 분리)
-2. **GC #3 정기 점검**: 1-2 sprint 후 또는 새 도구 추가 시 `bash scripts/gc.sh` 실행. gc-history.md에 자동 append됨.
-3. **AGENTS.md 효과 측정**: 다음 새 세션이 AGENTS.md를 우선 읽고 작업 시작하는지 확인 (회의적 검증).
-4. **(선택) ruff format apply**: 추후 별도 PR로 blanket apply 검토. 신규 파일은 pre-commit으로 자동 포맷.
+1. **1회차 dry-run**: 재무팀 1-2명 대상 90분 압축 리허설. 페이싱 / MCP 설치 마찰 / Q&A 비중 측정 → 교안 미세 조정.
+2. **실습 자산 폴더 구성**: `docs/lecture/session-{1..4}/{samples,exercises,solutions}/` 생성. 1회차부터 우선.
+3. **PII 마스킹 샘플 1건**: `docs/references/` 원본 1개를 익명화 → `docs/lecture/samples/` 배치 (git OK).
+4. **API key 정책 합의**: 3회차 전 사내 발급 절차 확정. 개인키 vs 팀키.
+5. **(선택) v3 교안 분기**: 8h 압축 vs 16h 확장 (실습 비중 ↑) 양 갈래 검토.
 
 ## Blockers
 
-없음. 모든 게이트 PASS (ruff check, pytest 234, cov 88.70%, vulture clean, verify-docs 4/4).
+없음. 교안 v2 자체는 완성. 사내 리허설 + 실습 자산은 본 세션 범위 밖.
 
 ## Watch Out
 
-- **vulture pydantic v2 false positive**: `ignore_names`에 `cls`, `model_config` 필수. positional path 인자 주면 pyproject 설정 무시됨. `vulture --min-confidence 80`만 호출.
-- **ruff format은 advisory**: 기존 코드 blanket format 금지. gc.sh에서 WARN으로 처리. 신규 파일만 pre-commit ruff-format hook으로 자동 정리.
-- **pre-commit 첫 run 지연**: ruff + pre-commit-hooks 환경 초기화에 1-2분. CI에서는 캐시 활용.
-- **verify_docs.py allowlist**: 신규 L2 orchestrator 추가 시 PRD 명시 + `L2_ORCHESTRATOR_ALLOWLIST` 갱신 + `docs/design-docs/layer-rules.md` Sanctioned 예외 섹션 추가.
-- **AGENTS.md 120줄 한도**: 도구/규칙 증가 시 docs/ 하위로 분리해서 ~100줄 유지. verify_docs.py 4번째 게이트가 강제.
-- **_workspace/ gitignored**: GC raw 결과 (`00_audit.md`, `00_code_facts.json`, `01-04`)는 로컬만. 다른 PC 이어받기 시 재생성.
+- **"자동화" 메시지 톤**: 19회 노출이 과한지 모니터. 재무팀 청중이 "AI가 일자리 뺏는다" 방어 반응 보일 가능성 — 1회차 도입에서 "보조 도구" 프레이밍 강조 필요.
+- **MCP 설치 마찰**: 1회차 Claude Desktop + humax-excel-mcp 연결이 최대 병목. 사전 설치 가이드 별도 배포 권장.
+- **pandoc .docx 스타일**: 기본 변환이라 사내 PPT 톤과 격차. 발표 시 .md → 본인 슬라이드 재포맷 필요.
+- **버전 관리**: v2 파일명 고정. v3 작성 시 `v2`는 보존하고 신규 파일로. 덮어쓰기 금지.
+- **사내 데이터 git push**: 강의 실습용 xlsx도 `.gitignore` + 정규식 스캔 2중 차단 대상. PII 마스킹 후에도 신중히.
 
 ## Files Touched
 
-### New (root)
-- `AGENTS.md` (110 lines)
-- `CLAUDE.md` (symlink → AGENTS.md)
-- `ARCHITECTURE.md` (91 lines)
-- `.claudeignore` (80 lines)
-- `.pre-commit-config.yaml` (30 lines)
-
-### New (docs/)
-- `docs/PLANS.md`, `docs/PRODUCT_SENSE.md`, `docs/QUALITY.md`, `docs/RELIABILITY.md`, `docs/SECURITY.md`
-- `docs/design-docs/{core-beliefs, layer-rules}.md`
-- `docs/exec-plans/tech-debt-tracker.md` + `completed/v0.1.0-tdd-session.md`
-- `docs/generated/schema-snapshot.md`
-- `docs/harness/{principles, maturity-framework, fix-catalog, gc-history, harness-setup}.md`
-
-### New (scripts/)
-- `scripts/verify_docs.py` (4 게이트, executable)
-- `scripts/gc.sh` (통합 게이트, executable)
-
-### Modified
-- `pyproject.toml`: pytest-cov + vulture + pre-commit 의존성, [tool.coverage] + [tool.vulture] 설정 추가
-- `.gitignore`: `_workspace/` 추가
-
-### New (.claude-project/memory/)
-- `vulture-pydantic-v2-false-positives.md`
-- `ruff-format-as-advisory-not-blocking.md`
+### New (docs/prd/)
+- `docs/prd/humax-lecture-plan-v2.md` (466 lines, 자동화 19회)
+- `docs/prd/humax-lecture-plan-v2.docx` (20KB, pandoc 변환)
 
 ### Untouched (보존)
 - `src/humax_excel_mcp/**` (10 tools / core / schemas)
 - `tests/**` (234 tests)
-- `docs/prd/**` (SSOT 설계 문서)
-- `docs/references/**` (사내 데이터 xlsx)
-- `fixtures/templates/**`
-- `README.md`, `progress.txt`, `LICENSE`
+- `docs/prd/mcp-design-plan.md` (SSOT Rev 4)
+- `AGENTS.md` / `CLAUDE.md` / `ARCHITECTURE.md` / harness 전체
+- `scripts/**`, `.pre-commit-config.yaml`, `pyproject.toml`
 
 ## Commit / Push
 
-- Commit: `c18e05a` — `chore(harness): set up agent harness + GC infrastructure (L4 Optimized)`
-- Push: `3543e9d..c18e05a main -> main` (origin/hjsh200219/humax-mcp)
-- 24 files changed, 1587 insertions(+)
+- Commit: `c73ceab` — `docs: add 4-session lecture plan v2 (8h, Desktop→Code→API→Web stack)`
+- Push: `c73ceab main -> main` (origin)
+- 2 files added (.md 466 lines + .docx 20KB)

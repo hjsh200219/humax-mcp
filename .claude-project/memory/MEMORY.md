@@ -14,3 +14,4 @@
 - [bp26 vs raw_bp26 schema 분리 (v0.1.2)](raw-vs-aggregated-schema-separation.md) — frozen schema + 별도 raw 파일 + aggregator 변환 layer
 - [vulture + pydantic v2 false positives](vulture-pydantic-v2-false-positives.md) — ignore_names에 cls/model_config 추가, path 인자 제거
 - [ruff format은 advisory (기존 프로젝트)](ruff-format-as-advisory-not-blocking.md) — blanket format 회피, 신규 파일만 pre-commit으로 자동 포맷
+- [DRI 모델 강의 척추](dri-model-claude-ecosystem-pedagogy.md) — Desktop/Remote/IDE 3단계 진화로 Claude 생태계 교육 구조화, 자동화 자산 기준 평가
