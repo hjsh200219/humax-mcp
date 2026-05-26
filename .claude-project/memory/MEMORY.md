@@ -15,3 +15,6 @@
 - [vulture + pydantic v2 false positives](vulture-pydantic-v2-false-positives.md) — ignore_names에 cls/model_config 추가, path 인자 제거
 - [ruff format은 advisory (기존 프로젝트)](ruff-format-as-advisory-not-blocking.md) — blanket format 회피, 신규 파일만 pre-commit으로 자동 포맷
 - [DRI 모델 강의 척추](dri-model-claude-ecosystem-pedagogy.md) — Desktop/Remote/IDE 3단계 진화로 Claude 생태계 교육 구조화, 자동화 자산 기준 평가
+- [비개발자 문서 스타일 — 비유 우선](non-dev-doc-style-analogy-first.md) — docs/prd/ 문서는 비유+ASCII 다이어그램+Before/After 표 우선, 코드 최소화
+- [Python vs LLM 역할 분담 canon](python-vs-llm-role-split-canon.md) — "숫자는 Python, 말은 LLM" — 외부 설명 시 표준 프레이밍
+- [docs/ 디렉터리 청중 라우팅](docs-prd-audience-routing.md) — prd=비개발자, design-docs=개발자. 신규 문서 위치 결정 기준

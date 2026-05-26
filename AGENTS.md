@@ -103,6 +103,7 @@ Tradeoff: These guidelines bias toward caution over speed. For trivial tasks, us
 - [README.md](./README.md) — 사용자 퀵스타트
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — 레이어 + 의존 + 교차 관심사
 - [docs/prd/mcp-design-plan.md](./docs/prd/mcp-design-plan.md) — 도구 spec SSOT (Rev 4)
+- [docs/prd/data-flow.md](./docs/prd/data-flow.md) — Excel 데이터 처리 흐름 (비개발자용, Python vs LLM 비교)
 - [docs/QUALITY.md](./docs/QUALITY.md) · [docs/RELIABILITY.md](./docs/RELIABILITY.md) · [docs/SECURITY.md](./docs/SECURITY.md) · [docs/PRODUCT_SENSE.md](./docs/PRODUCT_SENSE.md) · [docs/PLANS.md](./docs/PLANS.md)
 - [docs/design-docs/core-beliefs.md](./docs/design-docs/core-beliefs.md) · [docs/design-docs/layer-rules.md](./docs/design-docs/layer-rules.md)
 - [docs/exec-plans/tech-debt-tracker.md](./docs/exec-plans/tech-debt-tracker.md)

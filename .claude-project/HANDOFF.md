@@ -1,79 +1,48 @@
 ---
-created: 2026-05-26T13:00:00+09:00
-project: humax-excel-mcp
-summary: Humax 재무팀 4회×2h 자동화 강의 교안 v2 작성 (466 lines, 자동화 19회 강조). DRI 모델 (Desktop→Remote→IDE) 4단계 스택. pandoc .docx 변환본 동봉. Commit c73ceab push 완료.
+created: 2026-05-26T15:40:00+09:00
+project: humax-mcp
+summary: docs/prd/data-flow.md 신규 작성 — Excel 데이터 가공 흐름 비개발자용 설명 (Python vs LLM 비교 포함)
 ---
 
 ## Session Digest
 
-humax-excel-mcp 본 코드는 손대지 않고, 사내 재무팀 대상 4회×2h (총 8h) 자동화 강의 교안을 신규 작성. `docs/prd/humax-lecture-plan-v2.md` (466 lines) + pandoc 변환 .docx (20KB) 동봉.
+`docs/prd/data-flow.md` 신규 작성 (1 파일, untracked). 4회 반복으로 진화:
+1. 기술 PRD (L1-L5 레이어, 파이프라인, 횡단 관심사) ~164줄
+2. Excel 데이터 처리(read→aggregate→write→verify)로 범위 축소 ~366줄
+3. 초보자용 재작성 — 코드 제거, 비유(도서관/편지/지문)·ASCII 다이어그램·Before/After·FAQ 추가 ~280줄
+4. "Python vs LLM 직접 처리" 비교 섹션 추가 (역할 분담표, Python 우위 4가지, LLM 필수 5가지) 최종 ~370줄
 
-설계 골격: **DRI 모델** (Desktop → Remote → IDE) 3축으로 도구 학습 곡선 분리. 4회차 스택 누적:
-- **1회 Desktop full**: Claude Desktop + MCP 기본기 (humax-excel-mcp stdio 연결, 자연어 호출)
-- **2회 VS Code + Claude Code**: IDE 통합 + agent 위임 패턴
-- **3회 API + Git**: Anthropic API 직접 호출 + 버전 관리 워크플로
-- **4회 SQL + Next.js + Vercel**: 사내 데이터 → 웹 대시보드 배포까지
-
-핵심 메시지: 재무팀 실무자가 LLM "자동화"로 결산/리포팅을 단계적으로 자동화 (키워드 19회 반복 강조). 편집 3회 거쳐 메타 헤더 제거 / 자동화 목표 강화 / 클로징 메시지 4개 제거 (군더더기 정리).
-
-Commit c73ceab 단일 push 완료. 본 MCP 서버 source code / tests / harness 모두 무수정.
+코드 파일은 미수정. 의사결정 근거를 비전문가도 이해할 수 있는 문서로 정착.
 
 ## Progress
 
-### 완료
-- [x] `docs/prd/humax-lecture-plan-v2.md` 초안 작성 (4회×2h 구조)
-- [x] DRI 모델 (Desktop→Remote→IDE) 3축 도구 분리 정의
-- [x] 1회차 Desktop full (Claude Desktop + MCP 자연어 호출)
-- [x] 2회차 VS Code + Claude Code (IDE agent 위임)
-- [x] 3회차 Anthropic API + Git (직접 호출 + 버전 관리)
-- [x] 4회차 SQL + Next.js + Vercel (데이터 → 웹 배포)
-- [x] pandoc로 .docx 변환본 생성 (20KB, 사내 배포용)
-- [x] 편집 3회: 메타 헤더 제거 / "자동화" 목표 강화 / 클로징 메시지 4개 제거
-- [x] "자동화" 키워드 19회 노출 확인 (메시지 일관성)
-- [x] commit c73ceab, push origin/main
-
-### 미완료
-- [ ] **사내 리허설 미실시**: 실제 재무팀원 대상 1회차 dry-run 필요. 2h 페이싱 / MCP 설치 시간 / Q&A 비중 검증.
-- [ ] **회차별 실습 자산 분리**: 현재는 교안 1파일. 회차별 `samples/`, `exercises/`, `solutions/` 폴더 미생성.
-- [ ] **사내 데이터 마스킹 샘플**: 1회차 실습용 PII 제거된 xlsx 미준비 (현재 `docs/references/` 원본은 git push 금지).
-- [ ] **3회차 API key 정책**: Anthropic API 키 사내 발급/공유 절차 미정. `.env` 템플릿만 존재.
-- [ ] **4회차 Vercel 권한**: 사내 계정 / 도메인 정책 미확인.
+- ✅ `docs/prd/data-flow.md` 신규 작성 (370줄)
+- ✅ AGENTS.md 문서 인덱스에 항목 추가
+- ✅ Memory 3건 신규 저장 (`non-dev-doc-style-analogy-first`, `python-vs-llm-role-split-canon`, `docs-prd-audience-routing`)
+- ✅ 자체 hygiene 수정 (Korean/English 컬럼 suffix 일관성)
 
 ## Next Steps
 
-1. **1회차 dry-run**: 재무팀 1-2명 대상 90분 압축 리허설. 페이싱 / MCP 설치 마찰 / Q&A 비중 측정 → 교안 미세 조정.
-2. **실습 자산 폴더 구성**: `docs/lecture/session-{1..4}/{samples,exercises,solutions}/` 생성. 1회차부터 우선.
-3. **PII 마스킹 샘플 1건**: `docs/references/` 원본 1개를 익명화 → `docs/lecture/samples/` 배치 (git OK).
-4. **API key 정책 합의**: 3회차 전 사내 발급 절차 확정. 개인키 vs 팀키.
-5. **(선택) v3 교안 분기**: 8h 압축 vs 16h 확장 (실습 비중 ↑) 양 갈래 검토.
+1. 이해관계자(LG/Humax 실무자·강의 수강생) 공유 — Python vs LLM 섹션을 강의 자료/영업 슬라이드 베이스로 활용
+2. `python scripts/verify_docs.py` 게이트 검토 — 새 문서가 코드-문서 동기화 검사에 영향 없는지 확인
+3. 잠재: `docs/prd/humax-lecture-plan-v2.md`에서 data-flow.md 링크 추가 (강의 보조자료 연계)
 
 ## Blockers
 
-없음. 교안 v2 자체는 완성. 사내 리허설 + 실습 자산은 본 세션 범위 밖.
+없음.
 
 ## Watch Out
 
-- **"자동화" 메시지 톤**: 19회 노출이 과한지 모니터. 재무팀 청중이 "AI가 일자리 뺏는다" 방어 반응 보일 가능성 — 1회차 도입에서 "보조 도구" 프레이밍 강조 필요.
-- **MCP 설치 마찰**: 1회차 Claude Desktop + humax-excel-mcp 연결이 최대 병목. 사전 설치 가이드 별도 배포 권장.
-- **pandoc .docx 스타일**: 기본 변환이라 사내 PPT 톤과 격차. 발표 시 .md → 본인 슬라이드 재포맷 필요.
-- **버전 관리**: v2 파일명 고정. v3 작성 시 `v2`는 보존하고 신규 파일로. 덮어쓰기 금지.
-- **사내 데이터 git push**: 강의 실습용 xlsx도 `.gitignore` + 정규식 스캔 2중 차단 대상. PII 마스킹 후에도 신중히.
+- `data-flow.md` 내 ASCII 다이어그램·표는 monospace 가정. 렌더링 환경에 따라 정렬 깨질 수 있음
+- 비유/예시 숫자는 픽션 (24,847,000원 등). 실제 회사 데이터 아님 — PII 무관
+- `python-vs-llm-role-split-canon` 메모리는 외부 자료 작성 시 SSOT로 인용할 것
 
 ## Files Touched
 
-### New (docs/prd/)
-- `docs/prd/humax-lecture-plan-v2.md` (466 lines, 자동화 19회)
-- `docs/prd/humax-lecture-plan-v2.docx` (20KB, pandoc 변환)
-
-### Untouched (보존)
-- `src/humax_excel_mcp/**` (10 tools / core / schemas)
-- `tests/**` (234 tests)
-- `docs/prd/mcp-design-plan.md` (SSOT Rev 4)
-- `AGENTS.md` / `CLAUDE.md` / `ARCHITECTURE.md` / harness 전체
-- `scripts/**`, `.pre-commit-config.yaml`, `pyproject.toml`
-
-## Commit / Push
-
-- Commit: `c73ceab` — `docs: add 4-session lecture plan v2 (8h, Desktop→Code→API→Web stack)`
-- Push: `c73ceab main -> main` (origin)
-- 2 files added (.md 466 lines + .docx 20KB)
+- `docs/prd/data-flow.md` — 신규
+- `AGENTS.md` — 문서 인덱스 1줄 추가
+- `.claude-project/memory/non-dev-doc-style-analogy-first.md` — 신규
+- `.claude-project/memory/python-vs-llm-role-split-canon.md` — 신규
+- `.claude-project/memory/docs-prd-audience-routing.md` — 신규
+- `.claude-project/memory/MEMORY.md` — 인덱스 3줄 추가
+- `.claude-project/HANDOFF.md` — 본 파일
