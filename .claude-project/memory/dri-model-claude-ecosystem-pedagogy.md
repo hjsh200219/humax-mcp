@@ -18,3 +18,5 @@ created: 2026-05-26
 **Why:** 기존 v1 강의(9.5h+10h, "토큰 한계" 진단 중심)는 문제 해결 강의였지만, v2는 "생태계 전환" 강의로 프레이밍 자체가 다름. 실무자 인식 전환에는 단순 기능 나열보다 진화 경로(D→R→I)가 효과적.
 
 **How to apply:** Humax 후속 강의 / 타 재무팀 강의 / 사내 AX 컨설팅 자료 작성 시 DRI를 그대로 척추로 사용. 회차별 산출물 평가는 "자동화 자산(트리거→결과)" 기준만 적용. 1회차 hook으로 D vs I 학습 곡선 비교표를 먼저 깔면 동기부여 정렬됨.
+
+**운영 메모 (2026-06-04):** 강의 실제 진행 기록은 `docs/prd/humax-lecture-plan-v2.md` 끝 "부록: 실행 로그"에 "### N회차 (날짜)" 형식으로 누적 (계획서 1파일 유지, 계획≠실행 섹션 분리). 2회차 실제 진행: Git/Node.js 설치 → VS Code(Claude Code+Codex/Gemini, 테트리스 실습) → PRD/MD/JSON 소개 → OMC+ralph/ralplan → humax-mcp 설치. **3회차 예정**: git 기본 개념(clone/push/pull) 소개 — v2 계획서 3회차("API·크롤링·Git·환경변수·테스트")에 clone/push/pull 기초 모듈 명시 권장.
