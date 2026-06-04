@@ -464,3 +464,25 @@
 | 실습 데이터 | 합성/마스킹 데이터 우선 (사내 raw는 Phase 0 거버넌스 통과 후) |
 | 강의실 환경 | 각자 노트북 + 안정적 인터넷 (Supabase/Vercel/GitHub 접속) |
 | 평가 | 1-2회: 환경 셋업 / 3회: API 호출 스크립트 1개 / 4회: 배포된 URL 1개 |
+
+---
+
+## 부록: 실행 로그
+
+> 계획 대비 실제 진행 기록. 회차별 누적.
+
+### 2회차 (2026-06-04)
+
+**진행 내용**
+- Git 설치 + Node.js 설치
+- VS Code 설치
+  - Claude Code 설치
+  - Codex, Gemini 확장 프로그램 소개
+  - 실습: 간단한 테트리스 만들기
+- PRD, MD(Markdown), JSON 소개
+- OMC 설치 및 ralph, ralplan 안내
+- 본 MCP (humax-excel-mcp) 설치
+
+**숙제**
+- ralph, ralplan으로 개발해보기
+- 본 MCP 사용해보기
