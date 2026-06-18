@@ -17,7 +17,7 @@ file #1 (`클로드 코워크 활용안_고정비.xlsx`) 워크플로우의 5개
 | 환율 수기 입력 | Step 3 외부 데이터 | `get_exchange_rates` (한국수출입은행 API) |
 | 배부율 수기 편집 | Step 3 raw 셀 편집 | `get/update_allocation_rates` |
 
-## 도구 7개
+## 도구 10개
 
 | # | 도구 | 기능 |
 |---|---|---|
@@ -28,6 +28,9 @@ file #1 (`클로드 코워크 활용안_고정비.xlsx`) 워크플로우의 5개
 | 5 | `get_allocation_rates` | 26BP raw 배부율 조회 + 합 100% 검증 |
 | 6 | `update_allocation_rates` | 배부율 변경 (write_cells 안전 정책 + tolerance) |
 | 7 | `get_exchange_rates` | 한국수출입은행 환율 API 조회 (휴일 fallback + JPY/IDR 정규화) |
+| 8 | `apply_golden_template` | 디자인 드리프트 차단 골든 템플릿 적용 |
+| 9 | `generate_report` | 결과 리포트 생성 |
+| 10 | `restore_backup` | 백업 복구 |
 
 전 도구 공통:
 - `render_format: "excel" | "live_artifact" | "both"` Live Artifact 출력 옵션
@@ -52,7 +55,9 @@ file #1 (`클로드 코워크 활용안_고정비.xlsx`) 워크플로우의 5개
 # Windows
 git clone https://github.com/hjsh200219/humax-mcp.git
 cd humax-mcp
-.\scripts\install.ps1
+python -m venv .venv
+.venv\Scripts\activate
+pip install -e ".[test,dev]"
 # .env에 EXCHANGE_RATE_API_KEY 입력
 # Claude Desktop 재시작
 ```
@@ -60,20 +65,22 @@ cd humax-mcp
 업데이트:
 
 ```powershell
-.\scripts\update.ps1
+git pull
+pip install -e ".[test,dev]"
+# Claude Desktop 재시작
 ```
 
 ## 설계 문서
 
-- [MCP 설계서](docs/prd/mcp-design-plan.md) — 도구 7개 상세 spec, 안전 정책, Pre-mortem 7 시나리오, 테스트 plan
-- [강의 계획서](docs/prd/humax-lecture-plan.md) — 2차 (Cowork + MCP) + 3차 (Code/바이브) 강의 구성
+- [MCP 설계서](docs/prd/mcp-design-plan.md) — 도구 10개 상세 spec, 안전 정책, Pre-mortem 7 시나리오, 테스트 plan
+- [강의 계획서](docs/prd/humax-lecture-plan-v2.md) — 4회차 강의 구성 (Desktop→Code→API→Web)
 
 ## 안전 정책 (P1-P5)
 
 1. **원본 보존 우선** — read-only 기본, write는 명시적 + 백업 강제
 2. **결정론은 Python에 위임** — LLM 산술 금지
 3. **토큰 효율** — 필터된 응답, 페이지네이션
-4. **안전** — 백업 + dry-run + 감사 로그
+4. **안전** — 백업 + dry-run + 감사 로그 + sha256 검증
 5. **자연어 호출 가능** — 실무자 CLI 학습 부담 0
 
 ## 거버넌스
@@ -87,7 +94,7 @@ cd humax-mcp
 
 | 버전 | 내용 |
 |---|---|
-| v0.1 | 도구 7개 + Live Artifact + GitHub Private repo 배포 (현재 설계) |
+| v0.1.2 | 도구 10개 + Live Artifact + 26BP 실데이터 어댑터 + 234 tests (배포 완료) |
 | v0.2 | 적요 활용 + 고급 배부 + 사내 PC 1대 서버화 (HTTP/SSE) |
 | v0.3 | SAP API 직접 연동 (GUI Script / OData / RFC) |
 | v0.4 | 전사 확대 — 부서별 MCP (sales/hr/scm 등) + 사내 마켓플레이스 |
