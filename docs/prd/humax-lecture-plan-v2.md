@@ -16,20 +16,22 @@
 
 ### 강의 출발점
 
-| 1회차 후 인식 | 4회차 후 능력 |
+| 1회차 후 인식 | 5회차 후 능력 |
 |---|---|
 | "Claude = Chat" | DRI 전체 활용 (Chat / Cowork / Skill / MCP / Schedule / Dispatch / Extension) |
 | "코드는 개발자 영역" | VS Code + Claude 확장으로 본인이 도구 빌드 |
-| "데이터는 수기 입력" | data.go.kr · SAP API · 크롤링으로 자동 수집 |
-| "결과는 엑셀로 끝" | Supabase DB → Next.js → Vercel 웹 배포 |
+| "데이터는 수기 입력" | data.go.kr · SAP OData · 공공 API로 자동 수집 |
+| "결과는 엑셀로 끝" | Supabase DB → Next.js → Vercel 웹 배포 + E2E 검증 |
 
 ### DRI 모델 (강의 척추)
 
 | 단계 | 명칭 | 환경 | 학습 곡선 | 강의 회차 |
 |---|---|---|---|---|
 | **D** | Desktop | Claude Desktop (Chat, Cowork, Extension) | 낮음 | 1회 |
-| **R** | Remote | Schedule + Dispatch (무인 실행) | 중간 | 1회 후반 + 3회 응용 |
-| **I** | IDE | Claude Code (Terminal / VS Code / Desktop 내부) | 중간~높음 | 2회 본격 + 3-4회 심화 |
+| **R** | Remote | Schedule + Dispatch (무인 실행) | 중간 | 1회 후반 + 응용 |
+| **I** | IDE | Claude Code (Terminal / VS Code / Desktop 내부) | 중간~높음 | 2회 본격 + 3-5회 심화 |
+
+> 5회 구성: 1회 D 풀활용 → 2회 I 도입 → 3회 Git·API·SAP OData·MCP 테스트 → 4회 SQL·DB·Supabase → 5회 웹 배포·E2E.
 
 ---
 
@@ -37,11 +39,11 @@
 
 ### 모듈 1-1: DRI 모델 소개 (15min)
 
-**목표**: 4회 강의 전체 지도 + 본 회차 위치 명확화
+**목표**: 5회 강의 전체 지도 + 본 회차 위치 명확화
 
 **내용**:
 - DRI 도식: Desktop → Remote → IDE 진화 경로
-- 1회 = D 풀활용 + R 도입 / 2회 = I 본격 / 3-4회 = 응용
+- 1회 = D 풀활용 + R 도입 / 2회 = I 본격 / 3-5회 = 응용·풀스택
 - 각 단계 학습 곡선·산출물·실무 효과 비교
 
 ---
@@ -203,9 +205,77 @@
 
 ---
 
-## 3회차: API · 크롤링 · Git · 환경변수 · 테스트 (2h)
+## 3회차: Playground · Git · 환경변수 · API · SAP OData · MCP 테스트 (2h)
 
-### 모듈 3-1: API 개념 이해 (15min)
+### 모듈 3-1: Playground 스킬 소개 (10min)
+
+**목표**: 옵션 탐색용 인터랙티브 도구 체험
+
+**내용**:
+- Playground 스킬 = 주제 하나로 자체완결 인터랙티브 HTML 생성 (컨트롤 + 라이브 미리보기 + 프롬프트 복사 버튼)
+- 사용 흐름: 컨트롤 조정 → 즉시 미리보기 → 하단 프롬프트 복사 → Claude에 붙여넣기
+- 외부 의존성 0, 단일 HTML 파일 → 공유·재사용 쉬움
+- 실 예제: 본 강의 계획서로 만든 `docs/prd/lecture-plan-playground.html` (강의 튜너)
+
+**실습**:
+- lecture-plan-playground.html 열어 회차·모듈·페이스 조정 → 수정 프롬프트 생성 체험
+
+**산출**: Playground 1회 사용 경험
+
+---
+
+### 모듈 3-2: Git 개념 (10min)
+
+**목표**: 버전관리 진입
+
+**내용**:
+- Git 핵심 5개 명령: `clone` / `add` / `commit` / `push` / `pull`
+- 매월 산출물 commit → 변경 추적 (file diff 시연)
+- 커밋 단위·메시지 컨벤션 기본
+
+**실습**:
+- humax-excel-mcp clone → 첫 commit (파일 1개 수정 → diff 확인 → commit)
+
+**산출**: 첫 commit 1개
+
+---
+
+### 모듈 3-3: GitHub 소개 (10min)
+
+**목표**: 원격 저장소 + 협업 진입
+
+**내용**:
+- GitHub Private repo 생성 → VS Code 연결
+- `push` / `pull` 원격 동기화
+- `.gitignore` 패턴 (사내 데이터 차단 — humax-mcp `.gitignore` 인용)
+
+**실습**:
+- GitHub Private repo 1개 생성 → 모듈 3-2 commit → push
+
+**산출**: GitHub Private repo 1개 + push 완료
+
+---
+
+### 모듈 3-4: 환경변수 관리 (15min)
+
+**목표**: API 키 안전 보관
+
+**내용**:
+- `.env` 파일 패턴 (`EXCHANGE_RATE_API_KEY=...`)
+- `.gitignore`에 `.env` 강제
+- python-dotenv 로딩 (`os.getenv()`)
+- 키 노출 시나리오 + 폐기 절차
+- 사내 데이터 git push 금지 (humax-mcp `.gitignore` + 정규식 스캔 2중 차단 패턴 인용)
+
+**실습**:
+- `.env` 생성 + API 키 이동
+- `git status`로 `.env` 추적 안 됨 확인
+
+**산출**: `.env` 셋업 + 키 안전 보관
+
+---
+
+### 모듈 3-5: API 개념 소개 (15min)
 
 **목표**: REST API 기본 + 인증 패턴
 
@@ -216,123 +286,83 @@
 
 ---
 
-### 모듈 3-2: data.go.kr 데이터 받아오기 (20min)
+### 모듈 3-6: SAP OData 소개 (15min)
 
-**목표**: 공공 데이터 1회 호출 완주
-
-**내용**:
-- data.go.kr 회원가입 → 활용신청 → API Key 발급
-- Claude Code에게 "이 데이터 받아와줘" 자연어 요청 → Python `requests` 코드 자동 생성
-- 응답 파싱 → CSV 저장
-
-**실습**:
-- 한국수출입은행 환율 API (강의 자산 humax-excel-mcp 내부 코드 참조)
-- 본인 부서 관련 공공 데이터 1개 호출
-
-**산출**: 공공 데이터 1회 호출 스크립트
-
----
-
-### 모듈 3-3: SAP API 연결 (20min)
-
-**목표**: 사내 핵심 시스템 연결 진입
+**목표**: 사내 핵심 시스템(SAP) 데이터 접근 경로 인지
 
 **내용**:
+- **OData** = SAP가 제공하는 REST 기반 데이터 조회 표준 (결국 HTTP GET + 인증 → 직전 API 개념과 직결)
 - SAP 접근 4계층 비교:
-  - L1: SAP GUI Scripting (Basis 권한 불필요, Computer Use로 대체 가능)
-  - L2: OData / RFC (Basis 권한 필요)
+  - L1: GUI Scripting (Basis 권한 불필요, Computer Use로 대체 가능)
+  - L2: **OData / RFC** (Basis 권한 필요, REST로 표준 조회)
   - L3: ABAP 배치
   - L4: BTP / Joule (사내 LLM)
-- Humax 현재 단계 = L1 (Basis 협의 후 L2 점진)
-- FBL3N 자동 export 시연
+- Humax 현재 단계 = L1, OData(L2)는 Basis 협의 후 점진 도입 목표
+- FBL3N 등 전표 데이터를 OData 엔드포인트로 직접 조회하는 그림 (개념 시연)
 
 **실습**:
-- SAP GUI Script 1개 (Claude Code 코드 생성)
-- 결과 CSV → 01.Source 폴더 자동 적재
+- SAP OData 엔드포인트 구조 읽기 (`$filter`, `$select` 쿼리 옵션 개요)
+- 실 연결은 거버넌스/Basis 승인 후 — 본 회차는 접근 로드맵 이해까지
 
-**산출**: SAP export 자동화 1개
+**산출**: SAP 데이터 접근 로드맵 이해 (OData 도입 후보 엔드포인트 1개 식별)
 
 ---
 
-### 모듈 3-4: 크롬 개발자 도구로 크롤링 (15min)
-
-**목표**: API 없는 사이트도 데이터 추출
-
-**내용**:
-- 크롬 개발자 도구 (F12) → Network 탭 → API 호출 가로채기
-- Elements 탭 → 셀렉터 추출
-- Claude Code에 "이 사이트 크롤링" + 셀렉터 전달 → BeautifulSoup/Playwright 코드 생성
-- robots.txt / 약관 준수 안내
-
-**실습**:
-- 경쟁사 IR 페이지 / DART 공시 1건 크롤링
-
-**산출**: 크롤링 스크립트 1개
-
----
-
-### 모듈 3-5: Git 개념 + GitHub 사용법 (20min)
-
-**목표**: 버전관리 + 협업 진입
-
-**내용**:
-- Git 핵심 5개 명령: `clone` / `add` / `commit` / `push` / `pull`
-- GitHub Private repo 생성 → VS Code 연결
-- 매월 산출물 commit → 변경 추적 (file diff 시연)
-- `.gitignore` 패턴 (사내 데이터 차단)
-
-**실습**:
-- GitHub Private repo 1개 생성
-- humax-excel-mcp clone → 첫 commit/push
-- `.gitignore`에 raw 파일 패턴 추가
-
-**산출**: GitHub repo 1개 + 첫 commit
-
----
-
-### 모듈 3-6: 환경변수 관리 (15min)
-
-**목표**: API 키 안전 보관
-
-**내용**:
-- `.env` 파일 패턴 (`EXCHANGE_RATE_API_KEY=...`)
-- `.gitignore`에 `.env` 강제
-- python-dotenv 로딩
-- 키 노출 시나리오 + 폐기 절차
-- 사내 데이터 git push 금지 (humax-mcp `.gitignore` + 정규식 스캔 2중 차단 패턴 인용)
-
-**실습**:
-- `.env` 생성 + API 키 이동
-- 코드에서 `os.getenv()` 호출
-- `git status`로 `.env` 추적 안 됨 확인
-
-**산출**: `.env` 셋업 + 키 안전 보관
-
----
-
-### 모듈 3-7: 테스트 + 로그 분석 (15min)
+### 모듈 3-7: MCP 테스트 = 로그 파일 분석 (15min)
 
 **목표**: "동작하는 것 같다" → "동작한다" 증명
 
 **내용**:
-- pytest 기본 (assert / fixture)
-- 실패 테스트 작성 → Green → Refactor (TDD)
-- Claude Desktop 로그 파일 위치:
-  - macOS: `~/Library/Logs/Claude/`
-  - Windows: `%APPDATA%\Claude\logs\`
-- MCP 호출 실패 시 로그 추적 패턴
+- MCP 호출 실패 시 로그가 1차 단서
+- **MCP 로그 파일 위치** (운영체제별):
+  - macOS: `~/Library/Logs/Claude/mcp*.log` (서버별 `mcp-server-<name>.log`)
+  - Windows: `%APPDATA%\Claude\logs\mcp*.log`
+- MCP 호출 실패 패턴 추적 (도구 미등록 / 인자 오류 / 예외 stack)
+- humax-excel-mcp 감사 로그 (`.humax-mcp/audit/` JSONL, mac·win 공통 프로젝트 경로) 읽기
 
 **실습**:
-- 모듈 3-2 환율 호출 코드에 pytest 추가
-- 의도적 에러 주입 → 로그에서 원인 추적
+- 의도적 에러 주입 (잘못된 인자) → 로그에서 원인 추적
 
-**산출**: 테스트 1개 + 로그 분석 1회
+**산출**: MCP 로그 분석 1회 (실패 원인 1건 특정)
 
 ---
 
-## 4회차: SQL · DB · Next.js · 웹 배포 (2h)
+### 모듈 3-8: data.go.kr 가입 · API Key 발급 (10min)
 
-### 모듈 4-1: SQL 소개 (20min)
+**목표**: 공공 데이터 접근 권한 확보
+
+**내용**:
+- data.go.kr 회원가입 → 활용신청 → API Key 발급 흐름
+- 발급 키를 `.env`로 이동 (모듈 3-4 연계)
+- 활용신청 승인 대기/즉시 발급 구분
+
+**실습**:
+- data.go.kr API Key 1개 발급 → `.env` 등록
+
+**산출**: data.go.kr API Key 발급 + 안전 보관
+
+---
+
+### 모듈 3-9: 환율 조회 실습 (수출입은행 API) (20min)
+
+**목표**: 공공 API 1회 호출 완주
+
+**내용**:
+- Claude Code에게 "이 데이터 받아와줘" 자연어 요청 → Python `requests` 코드 자동 생성
+- 한국수출입은행 환율 API (강의 자산 humax-excel-mcp 내부 코드 참조)
+- 응답 파싱 → CSV 저장
+- 휴일 fallback 개념 (영업일 환율 없을 때 직전일 사용)
+
+**실습**:
+- 수출입은행 환율 API 호출 → CSV 저장 스크립트 1개
+
+**산출**: 공공 데이터(환율) 1회 호출 스크립트
+
+---
+
+## 4회차: SQL · DB · Supabase (2h)
+
+### 모듈 4-1: SQL 소개 (30min)
 
 **목표**: Excel을 넘어 DB 사고로
 
@@ -343,12 +373,30 @@
 - Claude Code에 자연어 → SQL 변환 요청 패턴
 
 **실습**:
-- SQLite 로컬 DB에 CC 마스터 적재
 - "본사 인건비 합계" SQL 1개 작성
+
+**산출**: SQL 쿼리 1개
 
 ---
 
-### 모듈 4-2: Supabase DB 연결 (25min)
+### 모듈 4-2: 로컬 DB (SQLite) (25min)
+
+**목표**: 파일 1개로 DB 체험
+
+**내용**:
+- SQLite = 설치 불필요 단일 파일 DB
+- 테이블 생성 → CC 마스터 적재
+- DB Browser / VS Code 확장으로 조회
+
+**실습**:
+- SQLite 로컬 DB에 CC 마스터 적재
+- 모듈 4-1 SQL 실행 → 결과 확인
+
+**산출**: 로컬 SQLite DB 1개 + 적재 1건
+
+---
+
+### 모듈 4-3: Supabase 연결 (35min)
 
 **목표**: 클라우드 DB로 다중 사용자 공유
 
@@ -360,15 +408,31 @@
 - 권한 (RLS, Row Level Security) 기본
 
 **실습**:
-- Supabase 프로젝트 1개 생성
-- humax-excel-mcp 결산 결과를 Supabase에 INSERT
-- Supabase 대시보드에서 데이터 조회
+- Supabase 프로젝트 1개 생성 + 테이블 3개
 
-**산출**: Supabase 프로젝트 + 테이블 3개 + 데이터 1건
+**산출**: Supabase 프로젝트 + 테이블 3개
 
 ---
 
-### 모듈 4-3: TypeScript · Next.js 소개 (25min)
+### 모듈 4-4: Supabase 데이터 적재 실습 (30min)
+
+**목표**: 결산 결과를 클라우드 DB로
+
+**내용**:
+- humax-excel-mcp 결산 결과 → Supabase INSERT
+- Supabase 대시보드에서 데이터 조회
+- 로컬 SQLite ↔ Supabase 차이 (공유/권한)
+
+**실습**:
+- 결산 결과 1건을 Supabase에 INSERT → 대시보드 확인
+
+**산출**: Supabase 데이터 1건 적재 + 조회
+
+---
+
+## 5회차: Vercel · 웹 · E2E 테스트 (2h)
+
+### 모듈 5-1: TypeScript · Next.js · 웹 화면 소개 (25min)
 
 **목표**: 웹 화면 만들기 진입
 
@@ -382,13 +446,13 @@
 
 **실습**:
 - Next.js 프로젝트 생성
-- 모듈 4-2 Supabase 데이터를 표로 표시하는 페이지 1개
+- 4회차 Supabase 데이터를 표로 표시하는 페이지 1개 (로컬 실행)
 
 **산출**: Next.js 페이지 1개 (로컬 실행)
 
 ---
 
-### 모듈 4-4: Vercel 웹 배포 + GitHub 연결 (25min)
+### 모듈 5-2: Vercel 웹 배포 + GitHub 연결 (25min)
 
 **목표**: 로컬 → 인터넷 (URL 발급)
 
@@ -400,29 +464,63 @@
 - Preview vs Production 환경 분리
 
 **실습**:
-- 모듈 4-3 Next.js 프로젝트를 GitHub push
-- Vercel 연결 → 자동 배포
-- 발급된 URL에서 데이터 확인
+- 모듈 5-1 Next.js 프로젝트를 GitHub push
+- Vercel 연결 → 자동 배포 → 발급 URL 확인
 
 **산출**: 배포된 웹사이트 URL 1개
 
 ---
 
-### 모듈 4-5: 웹 기반 테스트 + 로그 (15min)
+### 모듈 5-3: console.log 디버깅 (Console · Network) (20min)
 
 **목표**: 배포 후 디버깅 능력
 
 **내용**:
+- **크롬 개발자 도구 Console**: `console.log` / 클라이언트 에러 추적
+- **Network 탭**: API 응답 + 상태 코드 / payload 분석
 - **로컬 dev 서버**: `npm run dev` → 터미널 로그 실시간 확인
-- **크롬 개발자 도구 Console**: 클라이언트 에러 / API 호출 실패 추적
-- **Network 탭**: API 응답 확인 + 상태 코드 / payload 분석
 - Vercel 대시보드 Logs 탭 (서버 로그)
 
 **실습**:
-- 의도적 에러 주입 (예: 잘못된 Supabase 키) → Console + Vercel 로그 양쪽에서 원인 추적
+- 의도적 에러 주입 (잘못된 Supabase 키) → Console + Vercel 로그 양쪽 추적
 - 수정 → push → 자동 재배포 → 정상 확인
 
 **산출**: 디버깅 1회 + 재배포 1회
+
+---
+
+### 모듈 5-4: Playwright 사용법 (25min)
+
+**목표**: 브라우저 자동화 도구 진입
+
+**내용**:
+- Playwright = 브라우저를 코드로 조작 (클릭/입력/검증)
+- 설치: `npm init playwright@latest`
+- 셀렉터 (`getByRole`, `getByText`) + `expect` 단언
+- 헤드리스 vs 헤드풀 실행
+- Claude Code에 "이 페이지 이 버튼 눌러서 확인" 자연어 요청
+
+**실습**:
+- 모듈 5-2 배포 URL을 Playwright로 1회 방문 → 제목 단언
+
+**산출**: Playwright 스크립트 1개
+
+---
+
+### 모듈 5-5: E2E 테스트 작성 (25min)
+
+**목표**: 화면 전체 흐름 자동 검증
+
+**내용**:
+- E2E (End-to-End) = 사용자 시나리오 전체를 자동 재현
+- 시나리오: 페이지 진입 → 데이터 표 로드 → 특정 값 노출 확인
+- CI 연계 개념 (push 시 자동 테스트)
+- 실패 시 스크린샷/trace로 원인 추적
+
+**실습**:
+- "배포 페이지에 결산 결과 행이 보인다" E2E 테스트 1개 작성 → 통과 확인
+
+**산출**: E2E 테스트 1개 (Green)
 
 ---
 
@@ -432,25 +530,26 @@
 |---|---|---|---|---|
 | 1회 (2h) | Claude Desktop 풀활용 | D + R 일부 | Schedule(매월 1영업일) → 환율 자동 갱신 / Skill 1줄 → 배부판 생성 | Cowork Project + MCP 등록 + Skill/Schedule 1개씩 + Extension 4종 |
 | 2회 (2h) | Claude Code 본격 도입 | I | PRD 1장 → ralph 루프 자동 코드 생성·수정 | VS Code + OMC + ralph/ralplan + CCG 멀티 모델 환경 |
-| 3회 (2h) | API · 크롤링 · Git · 환경변수 · 테스트 | I 응용 | cron/이벤트 → 외부 데이터 자동 수집 → 저장소 자동 commit | 공공 API + SAP + 크롤링 + GitHub repo + `.env` + pytest |
-| 4회 (2h) | SQL · Supabase · Next.js · Vercel 배포 | I 풀스택 | DB 변경 → 웹 화면 자동 반영 / git push → 자동 배포 | Supabase DB + Next.js 페이지 + Vercel 배포 URL |
+| 3회 (2h) | Playground · Git · 환경변수 · API · SAP OData · MCP 테스트 | I 응용 | cron/명령 → 공공 API 자동 호출 → repo 자동 commit / MCP 로그 검증 | Playground 체험 + GitHub repo + `.env` + 환율 스크립트 + SAP OData 로드맵 + MCP 로그 분석 |
+| 4회 (2h) | SQL · DB · Supabase | I 데이터 | 결산 결과 → DB 자동 적재 | SQLite + Supabase DB(3 테이블) + 데이터 1건 |
+| 5회 (2h) | Vercel · 웹 · E2E 테스트 | I 풀스택 | git push → 자동 배포 / 배포 → E2E 자동 검증 | Next.js 페이지 + Vercel 배포 URL + Playwright E2E |
 
 ---
 
-## 산출물 (4회 누적)
+## 산출물 (5회 누적)
 
 | # | 산출물 | 합격 기준 |
 |---|---|---|
 | 1 | Cowork Project | "Humax 고정비 결산" Project 셋업 + 공통 자산 5종 첨부 |
-| 2 | MCP 활용 | humax-excel-mcp 등록 + Skill 1개 + Schedule 1개 |
+| 2 | MCP 활용 + 로그 분석 | humax-excel-mcp 등록 + Skill 1개 + Schedule 1개 + 로그 분석 1회 |
 | 3 | Extension 4종 | Chrome / Word / Excel / PPT 각 1회 사용 |
 | 4 | VS Code 환경 | Claude 확장 + Codex + Gemini + OMC 설치 완료 |
 | 5 | PRD + ralplan | 본인 부서 자동화 후보 1개 PRD + ralplan 실행 |
-| 6 | API 스크립트 3종 | 공공(data.go.kr) + SAP + 크롤링 각 1개 |
-| 7 | GitHub repo | Private repo + `.gitignore` + `.env` 안전 셋업 + 첫 commit |
-| 8 | pytest + 로그 분석 | 테스트 1개 + Claude Desktop 로그 추적 1회 |
-| 9 | Supabase + Next.js | DB 3 테이블 + 페이지 1개 + 데이터 fetch 동작 |
-| 10 | Vercel 배포 URL | GitHub 연결 + 자동 배포 + 환경변수 등록 + 디버깅 1회 |
+| 6 | GitHub repo + `.env` | Private repo + `.gitignore` + `.env` 안전 셋업 + 첫 commit/push |
+| 7 | data.go.kr 환율 스크립트 | API Key 발급 + 수출입은행 환율 호출 + CSV 저장 동작 |
+| 8 | SQL/Supabase DB | SQLite 적재 + Supabase 3 테이블 + 데이터 1건 적재 |
+| 9 | Vercel 배포 URL | Next.js 페이지 + GitHub 연결 + 자동 배포 + 환경변수 등록 |
+| 10 | Playwright E2E 테스트 | 배포 URL 대상 E2E 1개 작성 + 통과(Green) |
 
 ---
 
@@ -461,9 +560,9 @@
 | 인원 | 재무팀 실무자 5-10명 |
 | 사전 준비 | Claude Pro/Team 라이선스 / 노트북 (macOS or Windows) / GitHub 계정 / Supabase 계정 / data.go.kr 계정 |
 | 사후 설치 | Git / Node.js / VS Code / Claude Code CLI (2회 모듈 2-2에서 함께 설치) |
-| 실습 데이터 | 합성/마스킹 데이터 우선 (사내 raw는 Phase 0 거버넌스 통과 후) |
+| 실습 데이터 | 합성/마스킹 데이터 우선 (사내 raw·SAP 연결은 거버넌스/Basis 승인 후) |
 | 강의실 환경 | 각자 노트북 + 안정적 인터넷 (Supabase/Vercel/GitHub 접속) |
-| 평가 | 1-2회: 환경 셋업 / 3회: API 호출 스크립트 1개 / 4회: 배포된 URL 1개 |
+| 평가 | 1-2회: 환경 셋업 / 3회: API 환율 스크립트 1개 / 4회: DB 적재 1건 / 5회: 배포 URL + E2E 통과 |
 
 ---
 
