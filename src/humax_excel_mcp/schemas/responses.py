@@ -295,3 +295,45 @@ class RestoreBackupResult(BaseResult):
     restored_sha256: str | None = None
     pre_restore_backup_path: str | None = None
     metadata: dict[str, Any]
+
+
+class FcMonthAcSummary(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    sheet: str                       # "{월}(AC)"
+    formulas_restored: int
+    cells_written: int
+    unmatched_orgs: dict[str, float] = Field(default_factory=dict)
+    raw_actual_total: float          # 해당월 raw "실적" Amount(KRW) 총합
+
+
+class FcMonthCumulativeSummary(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    ac_sheet_created: str             # "{월} 누계(AC)"
+    detail_sheet_created: str         # "{월} 누계(상세)"
+    prev_sheets_hidden: list[str] = Field(default_factory=list)
+    formula_chain_extended: int       # build_ac_sheet에서 확장된 수식 셀 수
+
+
+class FcMonthVerification(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    verified: bool
+    raw_direct_total: float
+    derived_cumulative_total: float
+    detail_grand_total: float
+    diff: float
+    tolerance: float
+
+
+class FcMonthUpdateResult(BaseResult):
+    dry_run: bool
+    month: str
+    prev_month: str
+    output_path: str | None = None
+    backup_path: str | None = None
+    ac_summary: FcMonthAcSummary
+    cumulative_summary: FcMonthCumulativeSummary
+    verification: FcMonthVerification
+    warnings: list[str] = Field(default_factory=list)

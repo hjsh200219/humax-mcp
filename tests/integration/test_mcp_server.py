@@ -12,12 +12,12 @@ from humax_excel_mcp.tools import TOOL_NAMES
 pytestmark = pytest.mark.asyncio
 
 
-async def test_server_registers_ten_tools() -> None:
+async def test_server_registers_eleven_tools() -> None:
     mcp = build_server()
     tools = await mcp.list_tools()
     names = {t.name for t in tools}
     assert names == set(TOOL_NAMES)
-    assert len(names) == 10
+    assert len(names) == 11
 
 
 async def test_module_imports_without_error() -> None:

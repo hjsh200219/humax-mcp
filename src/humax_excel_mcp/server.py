@@ -11,7 +11,7 @@ def main() -> None:
 
 
 def build_server():
-    """Build FastMCP server with all 10 tools registered (v0.1.1)."""
+    """Build FastMCP server with all 11 tools registered (v0.2.0)."""
     from mcp.server.fastmcp import FastMCP
 
     from .tools import register_all

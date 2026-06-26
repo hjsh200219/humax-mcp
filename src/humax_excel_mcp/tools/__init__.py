@@ -1,4 +1,4 @@
-"""FastMCP tool registration. All 10 tools (v0.1.1)."""
+"""FastMCP tool registration. All 11 tools (v0.2.0)."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from .allocation_set import update_allocation_rates as _update_allocation_rates
 from .diff import generate_diff_candidates as _generate_diff_candidates
 from .exchange import get_exchange_rates as _get_exchange_rates
 from .extract import extract_filtered as _extract_filtered
+from .fc_month_update import update_fc_month_report as _update_fc_month_report
 from .report import generate_report as _generate_report
 from .restore import restore_backup as _restore_backup
 from .template_engine import apply_golden_template as _apply_golden_template
@@ -25,11 +26,12 @@ TOOL_NAMES = [
     "apply_golden_template",
     "generate_report",
     "restore_backup",
+    "update_fc_month_report",
 ]
 
 
 def register_all(mcp) -> None:
-    """Register all 10 tools on the FastMCP instance."""
+    """Register all 11 tools on the FastMCP instance."""
     mcp.tool()(audited("extract_filtered")(_extract_filtered))
     mcp.tool()(audited("verify_sums")(_verify_sums))
     mcp.tool()(audited("write_cells")(_write_cells))
@@ -40,3 +42,4 @@ def register_all(mcp) -> None:
     mcp.tool()(audited("apply_golden_template", file_path_arg="source_file")(_apply_golden_template))
     mcp.tool()(audited("generate_report", file_path_arg="source_file")(_generate_report))
     mcp.tool()(audited("restore_backup", file_path_arg="backup_path")(_restore_backup))
+    mcp.tool()(audited("update_fc_month_report", file_path_arg="template_path")(_update_fc_month_report))
