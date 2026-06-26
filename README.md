@@ -17,7 +17,7 @@ file #1 (`클로드 코워크 활용안_고정비.xlsx`) 워크플로우의 5개
 | 환율 수기 입력 | Step 3 외부 데이터 | `get_exchange_rates` (한국수출입은행 API) |
 | 배부율 수기 편집 | Step 3 raw 셀 편집 | `get/update_allocation_rates` |
 
-## 도구 10개
+## 도구 11개
 
 | # | 도구 | 기능 |
 |---|---|---|
@@ -31,6 +31,7 @@ file #1 (`클로드 코워크 활용안_고정비.xlsx`) 워크플로우의 5개
 | 8 | `apply_golden_template` | 디자인 드리프트 차단 골든 템플릿 적용 |
 | 9 | `generate_report` | 결과 리포트 생성 |
 | 10 | `restore_backup` | 백업 복구 |
+| 11 | `update_fc_month_report` | FC 실적 보고서 당월 배부판 자동 생성 ({월}(AC) 채우기 + 누계(AC)/누계(상세) 생성 + 3-way 교차검증) |
 
 전 도구 공통:
 - `render_format: "excel" | "live_artifact" | "both"` Live Artifact 출력 옵션
@@ -72,7 +73,7 @@ pip install -e ".[test,dev]"
 
 ## 설계 문서
 
-- [MCP 설계서](docs/prd/mcp-design-plan.md) — 도구 10개 상세 spec, 안전 정책, Pre-mortem 7 시나리오, 테스트 plan
+- [MCP 설계서](docs/prd/mcp-design-plan.md) — 도구 10개 상세 spec, 안전 정책, Pre-mortem 7 시나리오, 테스트 plan (11번째 도구는 [US-023 실행 계획](docs/exec-plans/completed/us-023-fc-month-update-tool.md) 참고)
 - [강의 계획서](docs/prd/humax-lecture-plan-v2.md) — 4회차 강의 구성 (Desktop→Code→API→Web)
 
 ## 안전 정책 (P1-P5)
