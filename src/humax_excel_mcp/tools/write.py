@@ -73,6 +73,31 @@ async def write_cells(
     skipped: list[WriteSkipped] = []
     warnings_list: list[WriteWarning] = []
 
+    # ── AB=None 사전 감지: 지급수수료 시트에서 예산 수식 누락 행 경고 ──────────
+    # AB열(col 28)=4월예산은 SUMIFS 수식이어야 함.
+    # B열(CC)과 E열(GL)이 모두 채워진 행에서 AB가 None이면 합계 불일치 원인이 됨.
+    if sheet_name == "지급수수료":
+        AB_COL, B_COL, E_COL = 28, 2, 5
+        missing_ab: list[int] = []
+        for row in ws.iter_rows(min_row=2):
+            b_val = row[B_COL - 1].value
+            e_val = row[E_COL - 1].value
+            ab_val = row[AB_COL - 1].value
+            if b_val and e_val and (ab_val is None or ab_val == ""):
+                missing_ab.append(row[0].row)
+        if missing_ab:
+            rows_str = ", ".join(str(r) for r in missing_ab[:20])
+            warnings_list.append(WriteWarning(
+                cell="AB열",
+                message=(
+                    f"⚠️ [예산수식 누락 감지] CC+GL 값이 있으나 AB(4월예산)가 비어 있는 행: "
+                    f"{rows_str}행. "
+                    "write_cells 실행 전 해당 행에 SUMIFS 수식을 먼저 추가하세요. "
+                    "누락 시 예산 합계에 차이가 발생합니다."
+                ),
+            ))
+    # ─────────────────────────────────────────────────────────────────────────
+
     seen: dict[str, int] = {}
     for upd in parsed:
         seen[upd.cell] = seen.get(upd.cell, 0) + 1
