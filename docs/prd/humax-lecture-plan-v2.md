@@ -31,7 +31,7 @@
 | **R** | Remote | Schedule + Dispatch (무인 실행) | 중간 | 1회 후반 + 응용 |
 | **I** | IDE | Claude Code (Terminal / VS Code / Desktop 내부) | 중간~높음 | 2회 본격 + 3-5회 심화 |
 
-> 5회 구성: 1회 D 풀활용 → 2회 I 도입 → 3회 Git·API·SAP OData·MCP 테스트 → 4회 SQL·DB·Supabase → 5회 웹 배포·E2E.
+> 5회 구성: 1회 D 풀활용 → 2회 I 도입 → 3회 Git·API·MCP 테스트 → 4회 하네스·SAP OData·SQL·DB·Supabase → 5회 웹 배포·E2E.
 
 ---
 
@@ -205,7 +205,7 @@
 
 ---
 
-## 3회차: Playground · Git · 환경변수 · API · SAP OData · MCP 테스트 (2h)
+## 3회차: Playground · Git · 환경변수 · API · MCP 테스트 (2h)
 
 ### 모듈 3-1: Playground 스킬 소개 (10min)
 
@@ -286,29 +286,7 @@
 
 ---
 
-### 모듈 3-6: SAP OData 소개 (15min)
-
-**목표**: 사내 핵심 시스템(SAP) 데이터 접근 경로 인지
-
-**내용**:
-- **OData** = SAP가 제공하는 REST 기반 데이터 조회 표준 (결국 HTTP GET + 인증 → 직전 API 개념과 직결)
-- SAP 접근 4계층 비교:
-  - L1: GUI Scripting (Basis 권한 불필요, Computer Use로 대체 가능)
-  - L2: **OData / RFC** (Basis 권한 필요, REST로 표준 조회)
-  - L3: ABAP 배치
-  - L4: BTP / Joule (사내 LLM)
-- Humax 현재 단계 = L1, OData(L2)는 Basis 협의 후 점진 도입 목표
-- FBL3N 등 전표 데이터를 OData 엔드포인트로 직접 조회하는 그림 (개념 시연)
-
-**실습**:
-- SAP OData 엔드포인트 구조 읽기 (`$filter`, `$select` 쿼리 옵션 개요)
-- 실 연결은 거버넌스/Basis 승인 후 — 본 회차는 접근 로드맵 이해까지
-
-**산출**: SAP 데이터 접근 로드맵 이해 (OData 도입 후보 엔드포인트 1개 식별)
-
----
-
-### 모듈 3-7: MCP 테스트 = 로그 파일 분석 (15min)
+### 모듈 3-6: MCP 테스트 = 로그 파일 분석 (15min)
 
 **목표**: "동작하는 것 같다" → "동작한다" 증명
 
@@ -327,7 +305,7 @@
 
 ---
 
-### 모듈 3-8: data.go.kr 가입 · API Key 발급 (10min)
+### 모듈 3-7: data.go.kr 가입 · API Key 발급 (10min)
 
 **목표**: 공공 데이터 접근 권한 확보
 
@@ -343,7 +321,7 @@
 
 ---
 
-### 모듈 3-9: 환율 조회 실습 (수출입은행 API) (20min)
+### 모듈 3-8: 환율 조회 실습 (수출입은행 API) (20min)
 
 **목표**: 공공 API 1회 호출 완주
 
@@ -360,9 +338,58 @@
 
 ---
 
-## 4회차: SQL · DB · Supabase (2h)
+## 4회차: 하네스 · SAP OData · SQL · DB · Supabase (2h)
 
-### 모듈 4-1: SQL 소개 (30min)
+> 3회차 미진행분(SAP OData) 이월 + 초반 하네스 설정 신설.
+
+### 모듈 4-1: 하네스 설정 — CLAUDE.md / AGENTS.md 역할 (15min)
+
+**목표**: Claude Code가 매 세션을 "프로젝트를 이해한 상태"로 시작하도록 리포지터리 세팅
+
+**내용**:
+- **하네스(harness)** = 에이전트가 잘 일하도록 리포지터리를 미리 세팅하는 것 (규칙·구조·문서를 심어두기). 사람 신입에게 주는 온보딩 문서와 같은 역할.
+- **CLAUDE.md 역할 (Claude 관점)**:
+  - 매 세션 시작 시 **컨텍스트에 자동 로드**되는 프로젝트 지시서 = Claude의 장기 기억
+  - 담는 것: 프로젝트 한 줄 요약 / 기술 스택 / 폴더 구조·규칙 / 금지사항 / 검증 명령
+  - 효과: 매번 "이 프로젝트는 Python이고 원본 덮어쓰지 마"를 설명할 필요 없음 → 토큰·시간 절약 + 실수 감소
+  - 위치: 리포 루트 `CLAUDE.md` (하위 폴더에도 두면 그 폴더 작업 시 추가 로드)
+- **CLAUDE.md ↔ AGENTS.md**:
+  - `CLAUDE.md` = Claude 전용, `AGENTS.md` = Codex·Gemini 등 타 에이전트 공용 표준
+  - humax-excel-mcp는 `CLAUDE.md → AGENTS.md` **심볼릭 링크** = 한 파일로 모든 에이전트에 같은 규칙 (2회차 멀티 모델 환경과 직결)
+- 실 예제: 본 프로젝트 `AGENTS.md` 구조 (프로젝트 한 줄 / 기술 스택 / Critical Constraints / Pre-Implementation Checklist)
+
+**실습**:
+- `/init` 스킬로 실습 repo `CLAUDE.md` 초안 자동 생성 → 프로젝트 한 줄 + 금지사항 2-3개 + 검증 명령 다듬기
+
+**산출**: 실습 repo `CLAUDE.md` 1개
+
+---
+
+### 모듈 4-2: SAP OData 소개 (15min)
+
+> 3회차 미진행분 이월.
+
+**목표**: 사내 핵심 시스템(SAP) 데이터 접근 경로 인지
+
+**내용**:
+- **OData** = SAP가 제공하는 REST 기반 데이터 조회 표준 (결국 HTTP GET + 인증 → 3회차 API 개념과 직결)
+- SAP 접근 4계층 비교:
+  - L1: GUI Scripting (Basis 권한 불필요, Computer Use로 대체 가능)
+  - L2: **OData / RFC** (Basis 권한 필요, REST로 표준 조회)
+  - L3: ABAP 배치
+  - L4: BTP / Joule (사내 LLM)
+- Humax 현재 단계 = L1, OData(L2)는 Basis 협의 후 점진 도입 목표
+- FBL3N 등 전표 데이터를 OData 엔드포인트로 직접 조회하는 그림 (개념 시연)
+
+**실습**:
+- SAP OData 엔드포인트 구조 읽기 (`$filter`, `$select` 쿼리 옵션 개요)
+- 실 연결은 거버넌스/Basis 승인 후 — 본 회차는 접근 로드맵 이해까지
+
+**산출**: SAP 데이터 접근 로드맵 이해 (OData 도입 후보 엔드포인트 1개 식별)
+
+---
+
+### 모듈 4-3: SQL 소개 (30min)
 
 **목표**: Excel을 넘어 DB 사고로
 
@@ -379,7 +406,7 @@
 
 ---
 
-### 모듈 4-2: 로컬 DB (SQLite) (25min)
+### 모듈 4-4: 로컬 DB (SQLite) (25min)
 
 **목표**: 파일 1개로 DB 체험
 
@@ -390,13 +417,13 @@
 
 **실습**:
 - SQLite 로컬 DB에 CC 마스터 적재
-- 모듈 4-1 SQL 실행 → 결과 확인
+- 모듈 4-3 SQL 실행 → 결과 확인
 
 **산출**: 로컬 SQLite DB 1개 + 적재 1건
 
 ---
 
-### 모듈 4-3: Supabase 연결 (35min)
+### 모듈 4-5: Supabase 연결 (35min)
 
 **목표**: 클라우드 DB로 다중 사용자 공유
 
@@ -414,7 +441,7 @@
 
 ---
 
-### 모듈 4-4: Supabase 데이터 적재 실습 (30min)
+### 모듈 4-6: Supabase 데이터 적재 실습 (30min)
 
 **목표**: 결산 결과를 클라우드 DB로
 
@@ -530,8 +557,8 @@
 |---|---|---|---|---|
 | 1회 (2h) | Claude Desktop 풀활용 | D + R 일부 | Schedule(매월 1영업일) → 환율 자동 갱신 / Skill 1줄 → 배부판 생성 | Cowork Project + MCP 등록 + Skill/Schedule 1개씩 + Extension 4종 |
 | 2회 (2h) | Claude Code 본격 도입 | I | PRD 1장 → ralph 루프 자동 코드 생성·수정 | VS Code + OMC + ralph/ralplan + CCG 멀티 모델 환경 |
-| 3회 (2h) | Playground · Git · 환경변수 · API · SAP OData · MCP 테스트 | I 응용 | cron/명령 → 공공 API 자동 호출 → repo 자동 commit / MCP 로그 검증 | Playground 체험 + GitHub repo + `.env` + 환율 스크립트 + SAP OData 로드맵 + MCP 로그 분석 |
-| 4회 (2h) | SQL · DB · Supabase | I 데이터 | 결산 결과 → DB 자동 적재 | SQLite + Supabase DB(3 테이블) + 데이터 1건 |
+| 3회 (2h) | Playground · Git · 환경변수 · API · MCP 테스트 | I 응용 | cron/명령 → 공공 API 자동 호출 → repo 자동 commit / MCP 로그 검증 | Playground 체험 + GitHub repo + `.env` + 환율 스크립트 + MCP 로그 분석 |
+| 4회 (2h) | 하네스 · SAP OData · SQL · DB · Supabase | I 데이터 | 결산 결과 → DB 자동 적재 / CLAUDE.md → 매 세션 규칙 자동 로드 | 하네스 CLAUDE.md + SAP OData 로드맵 + SQLite + Supabase DB(3 테이블) + 데이터 1건 |
 | 5회 (2h) | Vercel · 웹 · E2E 테스트 | I 풀스택 | git push → 자동 배포 / 배포 → E2E 자동 검증 | Next.js 페이지 + Vercel 배포 URL + Playwright E2E |
 
 ---
@@ -585,3 +612,10 @@
 **숙제**
 - ralph, ralplan으로 개발해보기
 - 본 MCP 사용해보기
+
+### 3회차
+
+**계획 변경**
+- 모듈 3-6 SAP OData 소개 미진행 → 4회차로 이월 (모듈 4-2)
+- 4회차 초반에 하네스 설정(CLAUDE.md/AGENTS.md 역할) 모듈 신설 (모듈 4-1)
+- 기존 3-7~3-9 → 3-6~3-8, 4-1~4-4 → 4-3~4-6 재번호
