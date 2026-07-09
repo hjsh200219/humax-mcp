@@ -457,6 +457,27 @@
 
 ---
 
+### 모듈 4-7: Embedding · RAG (30min)
+
+**목표**: 문서·적요 텍스트를 의미 기반으로 검색 (키워드 매칭 넘어)
+
+**내용**:
+- **Embedding** = 텍스트 → 고차원 벡터. 의미 가까우면 벡터 거리 가까움 (코사인 유사도)
+- 키워드 검색 한계: "출장비" ≠ "여비교통비" 매칭 실패 → embedding은 뜻으로 매칭
+- **RAG** (Retrieval-Augmented Generation) = 질문 → 관련 문서 벡터 검색 → LLM 컨텍스트 주입 → 근거 있는 답변 (환각 감소)
+- **Supabase pgvector** 확장 = PostgreSQL에 벡터 컬럼 + 유사도 검색 (모듈 4-5 Supabase 직결)
+- 흐름: 문서 청킹 → embedding 생성 → pgvector 저장 → 질의 시 top-k 검색 → LLM 답변
+- Humax 실무 매칭:
+  - 적요 → 계정과목 자동 분류 (과거 분류 사례 embedding 검색)
+  - SOP/규정 문서 RAG 질의 ("이 비용 어느 CC에 배부?")
+
+**실습**:
+- 계정과목 마스터 embedding → pgvector 저장 → 적요 1건 유사 계정 top-3 조회
+
+**산출**: pgvector 테이블 1개 + 유사도 검색 1회
+
+---
+
 ## 5회차: Vercel · 웹 · E2E 테스트 (2h)
 
 ### 모듈 5-1: TypeScript · Next.js · 웹 화면 소개 (25min)
@@ -558,7 +579,7 @@
 | 1회 (2h) | Claude Desktop 풀활용 | D + R 일부 | Schedule(매월 1영업일) → 환율 자동 갱신 / Skill 1줄 → 배부판 생성 | Cowork Project + MCP 등록 + Skill/Schedule 1개씩 + Extension 4종 |
 | 2회 (2h) | Claude Code 본격 도입 | I | PRD 1장 → ralph 루프 자동 코드 생성·수정 | VS Code + OMC + ralph/ralplan + CCG 멀티 모델 환경 |
 | 3회 (2h) | Playground · Git · 환경변수 · API · MCP 테스트 | I 응용 | cron/명령 → 공공 API 자동 호출 → repo 자동 commit / MCP 로그 검증 | Playground 체험 + GitHub repo + `.env` + 환율 스크립트 + MCP 로그 분석 |
-| 4회 (2h) | 하네스 · SAP OData · SQL · DB · Supabase | I 데이터 | 결산 결과 → DB 자동 적재 / CLAUDE.md → 매 세션 규칙 자동 로드 | 하네스 CLAUDE.md + SAP OData 로드맵 + SQLite + Supabase DB(3 테이블) + 데이터 1건 |
+| 4회 (2h) | 하네스 · SAP OData · SQL · DB · Supabase · Embedding/RAG | I 데이터 | 결산 결과 → DB 자동 적재 / 적요 → embedding 유사 계정 검색 / CLAUDE.md → 매 세션 규칙 자동 로드 | 하네스 CLAUDE.md + SAP OData 로드맵 + SQLite + Supabase DB(3 테이블) + 데이터 1건 + pgvector 검색 |
 | 5회 (2h) | Vercel · 웹 · E2E 테스트 | I 풀스택 | git push → 자동 배포 / 배포 → E2E 자동 검증 | Next.js 페이지 + Vercel 배포 URL + Playwright E2E |
 
 ---
