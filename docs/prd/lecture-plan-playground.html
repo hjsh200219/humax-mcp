@@ -190,22 +190,24 @@ const SESSIONS = [
     {id:'2-5', nm:'멀티 모델 리뷰 (CCG)', min:30, stage:'I', tag:'advanced'},
     {id:'2-6', nm:'숙제 안내', min:10, stage:'I', tag:'core'},
   ]},
-  {id:3, t:'3회차 · Playground·Git·API·SAP·MCP', s:'DRI: I 응용', mods:[
+  {id:3, t:'3회차 · Playground·Git·환경변수·API·MCP', s:'DRI: I 응용', mods:[
     {id:'3-1', nm:'Playground 스킬 소개', min:10, stage:'I', tag:'core'},
     {id:'3-2', nm:'Git 개념 (clone·commit·push)', min:10, stage:'I', tag:'foundational'},
     {id:'3-3', nm:'GitHub 소개 (repo·.gitignore)', min:10, stage:'I', tag:'foundational'},
     {id:'3-4', nm:'환경변수 관리 (.env)', min:15, stage:'I', tag:'core'},
     {id:'3-5', nm:'API 개념 소개 (REST·인증)', min:15, stage:'I', tag:'foundational'},
-    {id:'3-6', nm:'SAP OData 소개', min:15, stage:'I', tag:'advanced'},
-    {id:'3-7', nm:'MCP 테스트 = 로그 파일 분석', min:15, stage:'I', tag:'core'},
-    {id:'3-8', nm:'data.go.kr 가입·키 발급', min:10, stage:'I', tag:'core'},
-    {id:'3-9', nm:'환율 조회 실습 (수출입은행 API)', min:20, stage:'I', tag:'core'},
+    {id:'3-6', nm:'MCP 테스트 = 로그 파일 분석', min:15, stage:'I', tag:'core'},
+    {id:'3-7', nm:'data.go.kr 가입·키 발급', min:10, stage:'I', tag:'core'},
+    {id:'3-8', nm:'환율 조회 실습 (수출입은행 API)', min:20, stage:'I', tag:'core'},
   ]},
-  {id:4, t:'4회차 · SQL·DB·Supabase', s:'DRI: I 데이터', mods:[
-    {id:'4-1', nm:'SQL 소개 (SELECT·JOIN)', min:30, stage:'I', tag:'foundational'},
-    {id:'4-2', nm:'로컬 DB (SQLite)', min:25, stage:'I', tag:'core'},
-    {id:'4-3', nm:'Supabase 연결 (테이블·RLS)', min:35, stage:'I', tag:'core'},
-    {id:'4-4', nm:'Supabase 데이터 적재 실습', min:30, stage:'I', tag:'advanced'},
+  {id:4, t:'4회차 · 하네스·SAP·SQL·DB·Supabase·RAG', s:'DRI: I 데이터', mods:[
+    {id:'4-1', nm:'하네스 설정 (CLAUDE.md·AGENTS.md)', min:15, stage:'I', tag:'foundational'},
+    {id:'4-2', nm:'SAP OData 소개', min:15, stage:'I', tag:'advanced'},
+    {id:'4-3', nm:'SQL 소개 (SELECT·JOIN)', min:30, stage:'I', tag:'foundational'},
+    {id:'4-4', nm:'로컬 DB (SQLite)', min:25, stage:'I', tag:'core'},
+    {id:'4-5', nm:'Supabase 연결 (테이블·RLS)', min:35, stage:'I', tag:'core'},
+    {id:'4-6', nm:'Supabase 데이터 적재 실습', min:30, stage:'I', tag:'advanced'},
+    {id:'4-7', nm:'Embedding·RAG (pgvector)', min:30, stage:'I', tag:'advanced'},
   ]},
   {id:5, t:'5회차 · Vercel·웹·E2E 테스트', s:'DRI: I 풀스택', mods:[
     {id:'5-1', nm:'Next.js·웹 화면 소개', min:25, stage:'web', tag:'advanced'},
@@ -359,9 +361,9 @@ function buildPrompt(){
   // audience
   if(state.audience!==DEFAULTS.audience){
     if(state.audience==='beginner')
-      parts.push('대상은 **완전 초보 재무팀 실무자** 기준으로. 설치·기초 개념 모듈(필수 프로그램 설치, PRD 개념, Git/GitHub, API 개념, SQL 소개)을 더 자세히 풀고, 고급 모듈(CCG 멀티모델, SAP OData, Next.js, Playwright E2E)은 개요 수준으로 축소.');
+      parts.push('대상은 **완전 초보 재무팀 실무자** 기준으로. 설치·기초 개념 모듈(필수 프로그램 설치, PRD 개념, Git/GitHub, API 개념, SQL 소개)을 더 자세히 풀고, 고급 모듈(CCG 멀티모델, SAP OData, Embedding·RAG, Next.js, Playwright E2E)은 개요 수준으로 축소.');
     else
-      parts.push('대상은 **개발 경험이 있는 실무자** 기준으로. 설치·기초 모듈은 빠르게 넘기고, 고급 모듈(CCG 멀티모델, SAP OData, Next.js, Playwright E2E)에 시간을 더 배분.');
+      parts.push('대상은 **개발 경험이 있는 실무자** 기준으로. 설치·기초 모듈은 빠르게 넘기고, 고급 모듈(CCG 멀티모델, SAP OData, Embedding·RAG, Next.js, Playwright E2E)에 시간을 더 배분.');
   }
   // pace
   if(state.pace!==DEFAULTS.pace){
