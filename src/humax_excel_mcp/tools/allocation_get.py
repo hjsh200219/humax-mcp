@@ -8,7 +8,7 @@ from typing import Literal
 import pandas as pd
 
 from ..core import artifact_hints as ah
-from ..core import errors, excel_io
+from ..core import errors, workbook_cache
 from ..schemas import bp26
 from ..schemas.responses import AllocationRateRow, AllocationRatesResult
 
@@ -30,11 +30,7 @@ async def get_allocation_rates(
     if company is not None and company not in bp26.VALID_COMPANIES:
         raise errors.InvalidCompany(f"잘못된 회사 코드: {company}")
 
-    wb = excel_io.load_workbook_safe(file_path, data_only=True)
-    if "예산+실적" not in wb.sheetnames:
-        raise errors.SheetNotFound("예산+실적 시트를 찾을 수 없습니다.")
-    ws = wb["예산+실적"]
-    df = excel_io.worksheet_to_dataframe(ws)
+    df = workbook_cache.get_dataframe(file_path, "예산+실적")
 
     missing = [k for k in RATE_KEYS if k not in df.columns]
     if missing or "allocation_basis" not in df.columns:
@@ -84,15 +80,17 @@ async def get_allocation_rates(
             cc = str(keymap.get("cost_center", ""))
             basis = str(keymap.get("allocation_basis", ""))
             first = sub.iloc[0]
-            rows.append(AllocationRateRow(
-                cost_center=cc,
-                cost_center_name=str(first.get("gl_account_name", "") or ""),
-                allocation_basis=basis,
-                rates=rates,
-                rate_sum=rsum,
-                rate_sum_ok=ok,
-                row_count=len(sub),
-            ))
+            rows.append(
+                AllocationRateRow(
+                    cost_center=cc,
+                    cost_center_name=str(first.get("gl_account_name", "") or ""),
+                    allocation_basis=basis,
+                    rates=rates,
+                    rate_sum=rsum,
+                    rate_sum_ok=ok,
+                    row_count=len(sub),
+                )
+            )
 
     hints = ah.maybe_hints(
         render_format,

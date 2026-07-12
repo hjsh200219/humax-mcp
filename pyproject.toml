@@ -47,6 +47,9 @@ asyncio_mode = "auto"
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]
+markers = [
+    "benchmark: performance baseline measurements (advisory gate)",
+]
 
 [tool.coverage.run]
 source = ["src/humax_excel_mcp"]
@@ -92,3 +95,7 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "UP"]
 ignore = ["E501"]
+
+# first-party 명시: pre-commit ruff(pinned)와 로컬 ruff의 isort 그룹핑 합의
+[tool.ruff.lint.isort]
+known-first-party = ["humax_excel_mcp"]

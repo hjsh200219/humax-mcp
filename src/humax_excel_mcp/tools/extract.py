@@ -1,14 +1,16 @@
-"""extract_filtered tool — PRD §4.1."""
+"""extract_filtered tool — PRD §4.1 + accuracy-speed PRD US-S5/S-6."""
 
 from __future__ import annotations
 
+import re
+from math import ceil
 from pathlib import Path
 from typing import Any, Literal
 
 import pandas as pd
 
 from ..core import artifact_hints as ah
-from ..core import errors, excel_io, token_guard
+from ..core import errors, token_guard, workbook_cache
 from ..schemas import bp26
 from ..schemas.responses import ExtractMetadata, ExtractResult
 
@@ -23,19 +25,23 @@ async def extract_filtered(
     org_level: str | None = None,
     account_group: str | None = None,
     max_rows: int = 500,
+    page: int = 1,
+    page_size: int | None = None,
     sort_by: Literal["row_order", "variance_abs_desc", "amount_desc"] = "variance_abs_desc",
     output_format: Literal["json", "csv", "markdown"] = "json",
     render_format: Literal["excel", "live_artifact", "both"] = "excel",
 ) -> ExtractResult:
     """Filter rows from 26BP sheet. Returns ExtractResult."""
+    if page < 1 or (page_size is not None and page_size < 1):
+        raise errors.InvalidPagination(
+            f"page/page_size는 1 이상이어야 합니다. page={page}, page_size={page_size}"
+        )
     if company is not None and company not in bp26.VALID_COMPANIES:
         raise errors.InvalidCompany(
             f"잘못된 회사 코드: {company}. 사용 가능: {', '.join(bp26.VALID_COMPANIES)}"
         )
 
-    wb = excel_io.load_workbook_safe(file_path, data_only=True, read_only=True)
-    ws = excel_io.get_sheet(wb, sheet_name)
-    df = excel_io.worksheet_to_dataframe(ws)
+    df = workbook_cache.get_dataframe(file_path, sheet_name)
     total_rows = len(df)
 
     if columns:
@@ -58,8 +64,14 @@ async def extract_filtered(
         budget_col = f"m{m:02d}_budget"
         actual_col = f"m{m:02d}_actual"
         filters_applied["month"] = month
-        keep_cols = [c for c in work.columns if not c.startswith(("m", "cum")) or c in {budget_col, actual_col}]
-        keep_cols = [c for c in keep_cols if not (c.startswith("m") and c not in {budget_col, actual_col})]
+        keep_cols = [
+            c
+            for c in work.columns
+            if not c.startswith(("m", "cum")) or c in {budget_col, actual_col}
+        ]
+        keep_cols = [
+            c for c in keep_cols if not (c.startswith("m") and c not in {budget_col, actual_col})
+        ]
         keep_cols = [c for c in keep_cols if not c.startswith("cum")]
         work = work[keep_cols].copy()
         work = work.rename(columns={budget_col: "budget_amount", actual_col: "actual_amount"})
@@ -80,9 +92,8 @@ async def extract_filtered(
         }
         kws = ag_to_keywords.get(account_group, [account_group])
         if "gl_account_name" in work.columns:
-            mask = work["gl_account_name"].astype(str).apply(
-                lambda v: any(kw in v for kw in kws)
-            )
+            pattern = "|".join(re.escape(kw) for kw in kws)
+            mask = work["gl_account_name"].astype(str).str.contains(pattern, regex=True, na=False)
             work = work[mask]
         filters_applied["account_group"] = account_group
 
@@ -110,11 +121,21 @@ async def extract_filtered(
     elif sort_by == "amount_desc" and "actual_amount" in work.columns:
         work = work.sort_values(by="actual_amount", ascending=False)
 
+    # US-S5: 사전 페이지네이션 — 사후 절단 전에 요청 페이지만 남긴다
+    total_pages: int | None = None
+    if page_size is not None:
+        total_pages = max(1, ceil(filtered_rows / page_size))
+        work = work.iloc[(page - 1) * page_size : page * page_size]
+
     rows = work.to_dict(orient="records")
     rows, truncated = token_guard.auto_truncate(rows, max_rows=max_rows)
 
     if not rows and filtered_rows == 0:
         raise errors.EmptyResult("필터 조건에 맞는 데이터가 없습니다.")
+
+    if page_size is not None:
+        filters_applied["page"] = page
+        filters_applied["page_size"] = page_size
 
     if output_format != "json":
         if output_format == "csv":
@@ -141,6 +162,9 @@ async def extract_filtered(
         estimated_tokens=est_tokens,
         file_path=str(Path(file_path)),
         sheet_name=sheet_name,
+        page=page if page_size is not None else None,
+        page_size=page_size,
+        total_pages=total_pages,
     )
 
     title_parts: list[str] = []
@@ -157,7 +181,9 @@ async def extract_filtered(
         artifact_type="table_with_chart",
         title=f"26BP {title} 필터 결과",
         preferred_chart="bar",
-        columns_for_chart=[c for c in ("gl_account_name", "budget_amount", "actual_amount") if c in work.columns],
+        columns_for_chart=[
+            c for c in ("gl_account_name", "budget_amount", "actual_amount") if c in work.columns
+        ],
         highlight_threshold=10,
     )
 

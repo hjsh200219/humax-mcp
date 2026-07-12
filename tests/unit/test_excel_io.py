@@ -82,12 +82,15 @@ def test_worksheet_to_dataframe_default_backward_compat(sample_26bp_path: Path) 
 def test_worksheet_to_dataframe_explicit_header_row(tmp_path: Path) -> None:
     """AC2: Explicit header_row=3 reads row 3 as header."""
     from openpyxl import Workbook as WB
+
     p = tmp_path / "real_like.xlsx"
     wb = WB()
     ws = wb.active
     ws.append(["title"])  # row 1
     ws.append(["subtitle"])  # row 2
-    ws.append(["Year", "Month", "Company", "Cost Center", "G/L Account", "Amount\n(KRW)", "구분"])  # row 3
+    ws.append(
+        ["Year", "Month", "Company", "Cost Center", "G/L Account", "Amount\n(KRW)", "구분"]
+    )  # row 3
     ws.append([2026, 1, "HKR", 101, 500000, 1000, "예산"])  # row 4 data
     ws.append([2026, 2, "HKR", 101, 500000, 2000, "예산"])
     wb.save(p)
@@ -103,6 +106,7 @@ def test_worksheet_to_dataframe_explicit_header_row(tmp_path: Path) -> None:
 def test_worksheet_to_dataframe_auto_detect_raw(tmp_path: Path) -> None:
     """AC3: auto-detect with schema_module='raw_bp26' finds row 3."""
     from openpyxl import Workbook as WB
+
     p = tmp_path / "auto.xlsx"
     wb = WB()
     ws = wb.active
@@ -121,6 +125,7 @@ def test_worksheet_to_dataframe_auto_detect_raw(tmp_path: Path) -> None:
 def test_worksheet_to_dataframe_empty(tmp_path: Path) -> None:
     """AC4: Empty worksheet returns empty DataFrame."""
     from openpyxl import Workbook as WB
+
     p = tmp_path / "empty.xlsx"
     wb = WB()
     wb.save(p)
@@ -133,6 +138,7 @@ def test_worksheet_to_dataframe_empty(tmp_path: Path) -> None:
 def test_worksheet_to_dataframe_auto_detect_unknown_raises(tmp_path: Path) -> None:
     """AC5: Auto-detect raises SchemaMismatch when no row matches."""
     from openpyxl import Workbook as WB
+
     p = tmp_path / "junk.xlsx"
     wb = WB()
     ws = wb.active
@@ -157,6 +163,7 @@ def test_detect_source_format_aggregated(sample_26bp_path: Path) -> None:
 def test_detect_source_format_raw(tmp_path: Path) -> None:
     """detect_source_format -> ('raw', 3) for row-3-header file."""
     from openpyxl import Workbook as WB
+
     p = tmp_path / "raw.xlsx"
     wb = WB()
     ws = wb.active
@@ -170,3 +177,12 @@ def test_detect_source_format_raw(tmp_path: Path) -> None:
     fmt, row = excel_io.detect_source_format(ws2)
     assert fmt == "raw"
     assert row == 3
+
+
+def test_count_schema_matches_ignores_none_cells() -> None:
+    """US-A5: None 셀은 매칭 카운트에서 명시적으로 제외."""
+    from humax_excel_mcp.core.excel_io import _count_schema_matches
+    from humax_excel_mcp.schemas import bp26
+
+    row = (None, "구분", "Company", None, "대조직", "중조직", "소조직", None)
+    assert _count_schema_matches(row, bp26) == 5

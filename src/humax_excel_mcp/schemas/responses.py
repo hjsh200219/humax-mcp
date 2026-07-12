@@ -75,7 +75,7 @@ class LevelResult(BaseModel):
     expected: float
     actual: float
     difference: float
-    status: Literal["PASS", "FAIL"]
+    status: Literal["PASS", "FAIL", "SKIPPED"]
     detail: str | None = None
 
 
@@ -106,6 +106,7 @@ class VerifySummary(BaseModel):
     passed: int
     failed: int
     warnings: int
+    skipped: int = 0
 
 
 class VerifyResult(BaseResult):
@@ -300,20 +301,20 @@ class RestoreBackupResult(BaseResult):
 class FcMonthAcSummary(BaseModel):
     model_config = ConfigDict(extra="allow")
 
-    sheet: str                       # "{월}(AC)"
+    sheet: str  # "{월}(AC)"
     formulas_restored: int
     cells_written: int
     unmatched_orgs: dict[str, float] = Field(default_factory=dict)
-    raw_actual_total: float          # 해당월 raw "실적" Amount(KRW) 총합
+    raw_actual_total: float  # 해당월 raw "실적" Amount(KRW) 총합
 
 
 class FcMonthCumulativeSummary(BaseModel):
     model_config = ConfigDict(extra="allow")
 
-    ac_sheet_created: str             # "{월} 누계(AC)"
-    detail_sheet_created: str         # "{월} 누계(상세)"
+    ac_sheet_created: str  # "{월} 누계(AC)"
+    detail_sheet_created: str  # "{월} 누계(상세)"
     prev_sheets_hidden: list[str] = Field(default_factory=list)
-    formula_chain_extended: int       # build_ac_sheet에서 확장된 수식 셀 수
+    formula_chain_extended: int  # build_ac_sheet에서 확장된 수식 셀 수
 
 
 class FcMonthVerification(BaseModel):

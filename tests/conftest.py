@@ -39,13 +39,15 @@ def _full_header_row() -> list[str]:
 
 
 def _allocate_rates() -> list[float]:
-    seed = random.choice([
-        [25.0, 25.0, 25.0, 25.0],
-        [40.0, 10.0, 30.0, 20.0],
-        [35.0, 0.0, 30.0, 35.0],
-        [50.0, 20.0, 15.0, 15.0],
-        [0.0, 100.0, 0.0, 0.0],
-    ])
+    seed = random.choice(
+        [
+            [25.0, 25.0, 25.0, 25.0],
+            [40.0, 10.0, 30.0, 20.0],
+            [35.0, 0.0, 30.0, 35.0],
+            [50.0, 20.0, 15.0, 15.0],
+            [0.0, 100.0, 0.0, 0.0],
+        ]
+    )
     return list(seed)
 
 
@@ -146,15 +148,37 @@ def _build_workbook(path: Path, *, seed: int = 42, rows_per_org: int = 2) -> Pat
             grand_totals[i] += float(r[numeric_start + i] or 0)
 
     total_row = [
-        "총합계", "", "", "", "", "", "", "총합계",
+        "총합계",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "총합계",
         *grand_totals,
-        "총합계", "", "",
-        0.0, 0.0, 0.0, 0.0,
+        "총합계",
+        "",
+        "",
+        0.0,
+        0.0,
+        0.0,
+        0.0,
     ]
     ws.append(total_row)
 
     wb.save(path)
     return path
+
+
+@pytest.fixture(autouse=True)
+def _isolate_workbook_cache():
+    """테스트 간 워크북 캐시 오염 차단 (US-S3)."""
+    from humax_excel_mcp.core import workbook_cache
+
+    workbook_cache.clear()
+    yield
+    workbook_cache.clear()
 
 
 @pytest.fixture
@@ -199,20 +223,22 @@ def synthetic_raw_26bp_df() -> pd.DataFrame:
             for gl in [510000, 520000]:
                 for month_int, month_str in [(1, "1월"), (2, "2월"), (3, "3월")]:
                     for div in ["예산", "실적"]:
-                        rows.append({
-                            "division_type": div,
-                            "year": "26년",
-                            "month": month_str,
-                            "company": company,
-                            "cost_center": cc,
-                            "cost_center_name": f"CC{cc}",
-                            "gl_account": gl,
-                            "gl_account_name": f"GL{gl}",
-                            "org_l1": "사업그룹",
-                            "amount_krw": 1000.0 * month_int * (2 if div == "예산" else 1),
-                            "rate_stb": 25.0,
-                            "rate_mobility": 25.0,
-                            "rate_evcs_domestic": 30.0,
-                            "rate_evcs_overseas": 20.0,
-                        })
+                        rows.append(
+                            {
+                                "division_type": div,
+                                "year": "26년",
+                                "month": month_str,
+                                "company": company,
+                                "cost_center": cc,
+                                "cost_center_name": f"CC{cc}",
+                                "gl_account": gl,
+                                "gl_account_name": f"GL{gl}",
+                                "org_l1": "사업그룹",
+                                "amount_krw": 1000.0 * month_int * (2 if div == "예산" else 1),
+                                "rate_stb": 25.0,
+                                "rate_mobility": 25.0,
+                                "rate_evcs_domestic": 30.0,
+                                "rate_evcs_overseas": 20.0,
+                            }
+                        )
     return pd.DataFrame(rows)

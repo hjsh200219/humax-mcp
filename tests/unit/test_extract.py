@@ -71,9 +71,7 @@ async def test_metadata_fields(sample_26bp_path: Path) -> None:
 
 
 async def test_live_artifact_hints(sample_26bp_path: Path) -> None:
-    res = await extract_filtered(
-        str(sample_26bp_path), "예산+실적", render_format="live_artifact"
-    )
+    res = await extract_filtered(str(sample_26bp_path), "예산+실적", render_format="live_artifact")
     assert res.artifact_hints is not None
     assert res.artifact_hints.type == "table_with_chart"
     assert res.artifact_hints.preferred_chart == "bar"
@@ -99,9 +97,7 @@ async def test_org_level_filter(sample_26bp_path: Path) -> None:
 
 
 async def test_account_group_filter(sample_26bp_path: Path) -> None:
-    res = await extract_filtered(
-        str(sample_26bp_path), "예산+실적", account_group="인건비"
-    )
+    res = await extract_filtered(str(sample_26bp_path), "예산+실적", account_group="인건비")
     for row in res.data:
         name = str(row.get("gl_account_name", ""))
         assert any(k in name for k in ("급여", "상여", "복리후생"))
@@ -112,3 +108,37 @@ async def test_output_format_csv(sample_26bp_path: Path) -> None:
         str(sample_26bp_path), "예산+실적", max_rows=3, output_format="csv"
     )
     assert res.success
+
+
+# --- accuracy-speed PRD US-S5: 페이지네이션 ---
+
+
+async def test_pagination_pages_are_disjoint(sample_26bp_path: Path) -> None:
+    res1 = await extract_filtered(
+        str(sample_26bp_path), "예산+실적", page=1, page_size=10, sort_by="row_order"
+    )
+    res2 = await extract_filtered(
+        str(sample_26bp_path), "예산+실적", page=2, page_size=10, sort_by="row_order"
+    )
+    assert len(res1.data) == 10
+    assert len(res2.data) == 10
+    cc1 = {r["cost_center"] for r in res1.data}
+    cc2 = {r["cost_center"] for r in res2.data}
+    assert cc1.isdisjoint(cc2)
+    meta = res1.metadata.model_dump()
+    assert meta["page"] == 1
+    assert meta["page_size"] == 10
+    assert meta["total_pages"] >= 2
+
+
+async def test_pagination_invalid_raises(sample_26bp_path: Path) -> None:
+    with pytest.raises(errors.InvalidPagination):
+        await extract_filtered(str(sample_26bp_path), "예산+실적", page=0, page_size=10)
+    with pytest.raises(errors.InvalidPagination):
+        await extract_filtered(str(sample_26bp_path), "예산+실적", page=1, page_size=0)
+
+
+async def test_pagination_beyond_range_returns_empty(sample_26bp_path: Path) -> None:
+    res = await extract_filtered(str(sample_26bp_path), "예산+실적", page=9999, page_size=50)
+    assert res.data == []
+    assert res.metadata.filtered_rows > 0

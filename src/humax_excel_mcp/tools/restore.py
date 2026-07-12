@@ -9,7 +9,7 @@ from typing import Literal
 
 from ..core import artifact_hints as ah
 from ..core import backup as backup_mod
-from ..core import errors
+from ..core import errors, workbook_cache
 from ..schemas.responses import RestoreBackupResult
 
 
@@ -40,8 +40,7 @@ async def restore_backup(
     out = Path(output_path)
 
     is_in_place = (
-        original_file_path is not None
-        and out.resolve() == Path(original_file_path).resolve()
+        original_file_path is not None and out.resolve() == Path(original_file_path).resolve()
     )
 
     if is_in_place and not confirm_overwrite_original:
@@ -89,6 +88,7 @@ async def restore_backup(
         shutil.copy2(src, out)
     except OSError as exc:
         raise errors.RestoreFailed(f"복구 실패: 복사 오류 — {exc}") from exc
+    workbook_cache.invalidate(out)
 
     if not out.exists() or out.stat().st_size == 0:
         raise errors.RestoreFailed("복구 실패: 결과 파일 크기 0")

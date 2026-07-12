@@ -53,6 +53,9 @@ _RATE_COLUMNS: list[str] = [
 # Base group key columns (without org_l1)
 _GROUP_KEYS: list[str] = ["company", "cost_center", "gl_account"]
 
+# US-A6: month 파싱 실패율 경고 임계 (silent drop 방지)
+_MONTH_PARSE_WARN_RATIO = 0.01
+
 # Enrichment columns carried forward (first non-null per group)
 _ENRICHMENT_COLS: list[str] = [
     "gl_account_name",
@@ -159,6 +162,14 @@ def aggregate_to_bp26(
 
     aggregation_ms = (time.perf_counter() - t0) * 1000.0
 
+    # US-A6: silent drop 방지 — 파싱 실패율 1% 초과 시 경고 표면화
+    parse_fail_ratio = month_parse_failed / max(1, len(raw_df))
+    month_parse_warning = (
+        f"월 파싱 실패 {month_parse_failed}행 ({parse_fail_ratio:.1%}) — 원본 month 값 확인 필요"
+        if parse_fail_ratio > _MONTH_PARSE_WARN_RATIO
+        else None
+    )
+
     metadata = {
         "input_rows": len(raw_df),
         "output_rows": len(base),
@@ -166,6 +177,7 @@ def aggregate_to_bp26(
         "pii_cols_dropped": pii_cols_dropped,
         "aggregation_ms": aggregation_ms,
         "month_parse_failed": month_parse_failed,
+        "month_parse_warning": month_parse_warning,
     }
 
     return AggregateResult(df=base, metadata=metadata)
@@ -201,15 +213,19 @@ def _build_evcs_only_rows(raw_df: pd.DataFrame, target_month: int) -> pd.DataFra
     # EVCS row expansion via concat of two filtered+scaled views
     virtual_dfs = []
 
-    for org_name, rate_col in [("EVCS국내", "rate_evcs_domestic"), ("EVCS해외", "rate_evcs_overseas")]:
+    for org_name, rate_col in [
+        ("EVCS국내", "rate_evcs_domestic"),
+        ("EVCS해외", "rate_evcs_overseas"),
+    ]:
         if rate_col not in work.columns:
             continue
         slice_df = work[work[rate_col].fillna(0) > 0].copy()
         if slice_df.empty:
             continue
         slice_df["org_l1"] = org_name
-        # Scale amount_krw by rate / 100
-        slice_df["amount_krw"] = slice_df["amount_krw"] * slice_df[rate_col] / 100.0
+        # Scale amount_krw by rate / 100.
+        # 반올림 정책 (US-A4): 행 단위 원(KRW) 단위 round-half-even (banker's rounding).
+        slice_df["amount_krw"] = (slice_df["amount_krw"] * slice_df[rate_col] / 100.0).round(0)
         virtual_dfs.append(slice_df)
 
     if not virtual_dfs:
@@ -246,11 +262,7 @@ def _aggregate_pivot(
 
     carry_cols = enrichment_present + rates_present
     if carry_cols:
-        enrichment_df = (
-            work.groupby(group_keys)[carry_cols]
-            .first()
-            .reset_index()
-        )
+        enrichment_df = work.groupby(group_keys)[carry_cols].first().reset_index()
     else:
         enrichment_df = work[group_keys].drop_duplicates().reset_index(drop=True)
 
@@ -259,7 +271,9 @@ def _aggregate_pivot(
     actual_df = work[work["division_type"] == "실적"]
 
     budget_monthly = _pivot_monthly(budget_df, "budget", group_keys=group_keys)
-    actual_monthly = _pivot_monthly(actual_df, "actual", max_month=target_month, group_keys=group_keys)
+    actual_monthly = _pivot_monthly(
+        actual_df, "actual", max_month=target_month, group_keys=group_keys
+    )
 
     # Merge group keys into a base frame
     all_groups = work[group_keys].drop_duplicates().reset_index(drop=True)
@@ -318,7 +332,19 @@ def _aggregate_pivot(
     # Ensure all bp26.DEFAULT_COLUMNS keys are present
     for col in bp26.DEFAULT_COLUMNS:
         if col not in base.columns:
-            base[col] = 0 if col not in ("division", "text_summary", "remark", "allocation_basis", "org_l2", "org_l3") else ""
+            base[col] = (
+                0
+                if col
+                not in (
+                    "division",
+                    "text_summary",
+                    "remark",
+                    "allocation_basis",
+                    "org_l2",
+                    "org_l3",
+                )
+                else ""
+            )
 
     # Reorder: DEFAULT_COLUMNS first, then any extra rate columns
     extra_cols = [c for c in base.columns if c not in bp26.DEFAULT_COLUMNS]
@@ -351,11 +377,7 @@ def _pivot_monthly(
         return pd.DataFrame(columns=cols)
 
     # Pivot: group by (group_keys + month_int), sum amount_krw
-    pivot = (
-        df.groupby(group_keys + ["month_int"])["amount_krw"]
-        .sum()
-        .reset_index()
-    )
+    pivot = df.groupby(group_keys + ["month_int"])["amount_krw"].sum().reset_index()
 
     # Unstack month_int into columns
     pivot = pivot.pivot_table(

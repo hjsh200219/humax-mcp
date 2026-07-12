@@ -55,7 +55,7 @@ def get_sheet(wb: Workbook, sheet_name: str):
 def _count_schema_matches(row: tuple, schema_module: Any) -> int:
     """Count how many cells in a row match keys in the schema's COLUMN_MAP."""
     keys = set(schema_module.COLUMN_MAP.keys())
-    return sum(1 for cell in row if str(cell) if str(cell) in keys)
+    return sum(1 for cell in row if cell is not None and str(cell) in keys)
 
 
 def _dedup_headers(headers: list[str]) -> list[str]:

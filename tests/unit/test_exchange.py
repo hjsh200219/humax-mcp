@@ -31,12 +31,24 @@ def _today() -> str:
 
 def _ok_payload(usd: str = "1,393.00", jpy: str = "899.45") -> list[dict]:
     return [
-        {"result": 1, "cur_unit": "USD", "cur_nm": "미국 달러",
-         "deal_bas_r": usd, "ttb": "1,378.50", "tts": "1,407.50",
-         "kftc_deal_bas_r": usd},
-        {"result": 1, "cur_unit": "JPY(100)", "cur_nm": "일본 옌",
-         "deal_bas_r": jpy, "ttb": "890.54", "tts": "908.36",
-         "kftc_deal_bas_r": jpy},
+        {
+            "result": 1,
+            "cur_unit": "USD",
+            "cur_nm": "미국 달러",
+            "deal_bas_r": usd,
+            "ttb": "1,378.50",
+            "tts": "1,407.50",
+            "kftc_deal_bas_r": usd,
+        },
+        {
+            "result": 1,
+            "cur_unit": "JPY(100)",
+            "cur_nm": "일본 옌",
+            "deal_bas_r": jpy,
+            "ttb": "890.54",
+            "tts": "908.36",
+            "kftc_deal_bas_r": jpy,
+        },
     ]
 
 
@@ -74,6 +86,7 @@ async def test_api_key_missing(monkeypatch) -> None:
     monkeypatch.delenv("EXCHANGE_RATE_API_KEY", raising=False)
     # Block config.get from reading .env file in repo (which sets the key)
     from humax_excel_mcp import config as cfg
+
     monkeypatch.setattr(cfg, "load_env", lambda *a, **k: None)
     with pytest.raises(errors.ApiKeyMissing):
         await get_exchange_rates(search_date=_today())
@@ -99,9 +112,18 @@ async def test_empty_with_no_fallback(httpx_mock) -> None:
 
 
 async def test_fallback_finds_previous(httpx_mock) -> None:
-    httpx_mock.add_response(method="GET", url=URL_RE, json=[])
-    httpx_mock.add_response(method="GET", url=URL_RE, json=_ok_payload())
-    res = await get_exchange_rates(search_date=_today())
+    """S-1: fallback은 D-1..D-7 병렬 조회 — 날짜별 응답 등록으로 최근접 선택 검증."""
+    today = _today()
+    now = datetime.now(KST)
+    httpx_mock.add_response(method="GET", url=re.compile(f".*searchdate={today}.*"), json=[])
+    d1 = (now - timedelta(days=1)).strftime("%Y%m%d")
+    httpx_mock.add_response(
+        method="GET", url=re.compile(f".*searchdate={d1}.*"), json=_ok_payload()
+    )
+    for back in range(2, 8):
+        dt = (now - timedelta(days=back)).strftime("%Y%m%d")
+        httpx_mock.add_response(method="GET", url=re.compile(f".*searchdate={dt}.*"), json=[])
+    res = await get_exchange_rates(search_date=today)
     assert res.metadata["fallback_used"] is True
     assert res.metadata["fallback_days_back"] == 1
 
@@ -124,6 +146,7 @@ async def test_cache_hit_on_second_call(httpx_mock) -> None:
 
 async def test_api_timeout(httpx_mock) -> None:
     import httpx as _httpx
+
     httpx_mock.add_exception(_httpx.ReadTimeout("timeout"))
     with pytest.raises(errors.ApiRequestFailed):
         await get_exchange_rates(search_date=_today())
@@ -136,13 +159,38 @@ async def test_rate_limit(httpx_mock) -> None:
 
 
 async def test_sanity_warning_on_20pct_jump(httpx_mock) -> None:
+    """전 영업일 대비 20% 초과 변동 감지 (US-A2: 같은 날짜끼리 비교하던 dead code 교체)."""
+    prev_day = (datetime.now(KST) - timedelta(days=1)).strftime("%Y%m%d")
     httpx_mock.add_response(method="GET", url=URL_RE, json=_ok_payload(usd="1,000.00"))
-    await get_exchange_rates(search_date=_today())
-    exchange_mod._cache.clear()
+    await get_exchange_rates(search_date=prev_day)
     httpx_mock.add_response(method="GET", url=URL_RE, json=_ok_payload(usd="2,000.00"))
     res2 = await get_exchange_rates(search_date=_today())
     usd = next(r for r in res2.data.rates if r.cur_unit == "USD")
     assert usd.sanity_warning is True
+
+
+async def test_sanity_compares_previous_business_day(httpx_mock) -> None:
+    """US-A2: 전 영업일 대비 20% 초과 변동 시 sanity_warning. 캐시 경로에서도 유지."""
+    prev_day = (datetime.now(KST) - timedelta(days=1)).strftime("%Y%m%d")
+    httpx_mock.add_response(method="GET", url=URL_RE, json=_ok_payload(usd="1,000.00"))
+    await get_exchange_rates(search_date=prev_day)
+
+    httpx_mock.add_response(method="GET", url=URL_RE, json=_ok_payload(usd="1,300.00"))
+    res = await get_exchange_rates(search_date=_today())
+    usd = next(r for r in res.data.rates if r.cur_unit == "USD")
+    assert usd.sanity_warning is True
+
+    res2 = await get_exchange_rates(search_date=_today())
+    assert res2.metadata["cached"] is True
+    usd2 = next(r for r in res2.data.rates if r.cur_unit == "USD")
+    assert usd2.sanity_warning is True
+
+
+async def test_fetch_is_async() -> None:
+    """US-S1: 이벤트루프 블로킹 금지 — _fetch는 코루틴이어야 한다."""
+    import asyncio
+
+    assert asyncio.iscoroutinefunction(exchange_mod._fetch)
 
 
 async def test_live_artifact_hints(httpx_mock) -> None:

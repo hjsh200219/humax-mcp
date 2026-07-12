@@ -24,7 +24,7 @@ bash scripts/gc.sh                       # 통합 게이트 (lint+test+build+ver
 python scripts/verify_docs.py            # 문서-코드 동기화 검증
 ```
 
-## 도구 10개 (MCP)
+## 도구 11개 (MCP)
 
 | # | 도구 | 위치 | 기능 |
 |---|---|---|---|
@@ -38,6 +38,7 @@ python scripts/verify_docs.py            # 문서-코드 동기화 검증
 | 8 | `apply_golden_template` | tools/template_engine.py | 디자인 드리프트 차단 골든 템플릿 |
 | 9 | `generate_report` | tools/report.py | 결과 리포트 생성 |
 | 10 | `restore_backup` | tools/restore.py | 백업 복구 |
+| 11 | `update_fc_month_report` | tools/fc_month_update.py | FC 월 결산 리포트 갱신 (AC/누계 시트) |
 
 전 도구: `@audited()` 데코레이터, `render_format`, `artifact_hints` 공통.
 

@@ -53,6 +53,10 @@ fi
 
 step "vulture"         vulture --min-confidence 80 || echo "(vulture issues — non-blocking, review manually)"
 
+# 성능 벤치마크 (advisory, 비차단): accuracy-speed PRD 벤치 게이트
+pytest -q tests/benchmarks -m benchmark -p no:cacheprovider > /dev/null 2>&1 \
+  && LOG+=("PASS benchmarks") || LOG+=("WARN benchmarks (advisory)")
+
 step "verify-docs"     python scripts/verify_docs.py
 
 if [ "$SKIP_BUILD" -eq 0 ]; then

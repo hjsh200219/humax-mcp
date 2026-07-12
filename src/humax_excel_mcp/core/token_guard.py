@@ -53,15 +53,20 @@ def auto_truncate(
     max_rows: int,
     hard_limit_kb: float = HARD_LIMIT_KB,
 ) -> tuple[list[dict[str, Any]], bool]:
-    """Truncate to max_rows, then shrink further if serialized > hard_limit_kb.
+    """Truncate to max_rows, then shrink proportionally while serialized > hard_limit_kb.
 
+    측정 크기 비례 축소로 전체 재직렬화 횟수를 1-2회로 제한 (US-S4).
     Returns (rows, truncated).
     """
     truncated = False
     if len(rows) > max_rows:
         rows = rows[:max_rows]
         truncated = True
-    while rows and estimate_size_kb(rows) > hard_limit_kb:
-        rows = rows[: max(1, int(len(rows) * 0.75))]
+    size_kb = estimate_size_kb(rows) if rows else 0.0
+    while rows and size_kb > hard_limit_kb:
+        keep = int(len(rows) * hard_limit_kb / size_kb * 0.9)
+        keep = max(1, min(keep, len(rows) - 1))
+        rows = rows[:keep]
         truncated = True
+        size_kb = estimate_size_kb(rows)
     return rows, truncated

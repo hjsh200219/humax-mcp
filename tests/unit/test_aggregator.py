@@ -17,6 +17,7 @@ from humax_excel_mcp.schemas import bp26
 # AC1: One row per (company, cost_center, gl_account)
 # ---------------------------------------------------------------------------
 
+
 def test_ac1_row_count(synthetic_raw_26bp_df: pd.DataFrame) -> None:
     """AC1: 2 companies x 3 cost_centers x 2 gl_accounts = 12 rows."""
     result = aggregate_to_bp26(synthetic_raw_26bp_df, target_month=3)
@@ -27,6 +28,7 @@ def test_ac1_row_count(synthetic_raw_26bp_df: pd.DataFrame) -> None:
 # ---------------------------------------------------------------------------
 # AC2: cum03_actual == m01_actual + m02_actual + m03_actual
 # ---------------------------------------------------------------------------
+
 
 def test_ac2_cumulative_actual_identity(synthetic_raw_26bp_df: pd.DataFrame) -> None:
     """AC2: cum03_actual equals sum of m01..m03 actual for every row."""
@@ -40,6 +42,7 @@ def test_ac2_cumulative_actual_identity(synthetic_raw_26bp_df: pd.DataFrame) -> 
 # AC3: cum03_budget == m01_budget + m02_budget + m03_budget
 # ---------------------------------------------------------------------------
 
+
 def test_ac3_cumulative_budget_identity(synthetic_raw_26bp_df: pd.DataFrame) -> None:
     """AC3: cum03_budget equals sum of m01..m03 budget for every row."""
     result = aggregate_to_bp26(synthetic_raw_26bp_df, target_month=3)
@@ -52,6 +55,7 @@ def test_ac3_cumulative_budget_identity(synthetic_raw_26bp_df: pd.DataFrame) -> 
 # AC4: annual_budget == sum(m01_budget..m12_budget)
 # ---------------------------------------------------------------------------
 
+
 def test_ac4_annual_budget(synthetic_raw_26bp_df: pd.DataFrame) -> None:
     """AC4: annual_budget equals sum of all 12 monthly budget columns."""
     result = aggregate_to_bp26(synthetic_raw_26bp_df, target_month=3)
@@ -63,6 +67,7 @@ def test_ac4_annual_budget(synthetic_raw_26bp_df: pd.DataFrame) -> None:
 # ---------------------------------------------------------------------------
 # AC5: annual_actual == sum(m01_actual..m03_actual) for target_month=3
 # ---------------------------------------------------------------------------
+
 
 def test_ac5_annual_actual(synthetic_raw_26bp_df: pd.DataFrame) -> None:
     """AC5: annual_actual equals sum of actual months 1..target_month only."""
@@ -78,6 +83,7 @@ def test_ac5_annual_actual(synthetic_raw_26bp_df: pd.DataFrame) -> None:
 # ---------------------------------------------------------------------------
 # AC6: No PII columns in output; reversed_with NOT classified as PII
 # ---------------------------------------------------------------------------
+
 
 def test_ac6_no_pii_columns(synthetic_raw_26bp_df: pd.DataFrame) -> None:
     """AC6: PII canonical column names absent from output."""
@@ -103,6 +109,7 @@ def test_ac6_no_pii_columns(synthetic_raw_26bp_df: pd.DataFrame) -> None:
 # AC7: result.df columns are a superset of bp26.DEFAULT_COLUMNS
 # ---------------------------------------------------------------------------
 
+
 def test_ac7_output_is_superset_of_default_columns(synthetic_raw_26bp_df: pd.DataFrame) -> None:
     """AC7: All bp26.DEFAULT_COLUMNS are present in result.df."""
     result = aggregate_to_bp26(synthetic_raw_26bp_df, target_month=3)
@@ -115,11 +122,18 @@ def test_ac7_output_is_superset_of_default_columns(synthetic_raw_26bp_df: pd.Dat
 # AC7b: result.metadata contains required keys
 # ---------------------------------------------------------------------------
 
+
 def test_ac7b_metadata_keys(synthetic_raw_26bp_df: pd.DataFrame) -> None:
     """AC7b: metadata dict contains all required observability keys."""
     result = aggregate_to_bp26(synthetic_raw_26bp_df, target_month=3)
     md = result.metadata
-    required_keys = {"input_rows", "output_rows", "year_filtered", "pii_cols_dropped", "aggregation_ms"}
+    required_keys = {
+        "input_rows",
+        "output_rows",
+        "year_filtered",
+        "pii_cols_dropped",
+        "aggregation_ms",
+    }
     for key in required_keys:
         assert key in md, f"Missing metadata key: {key}"
     assert md["year_filtered"] is True
@@ -131,6 +145,7 @@ def test_ac7b_metadata_keys(synthetic_raw_26bp_df: pd.DataFrame) -> None:
 # ---------------------------------------------------------------------------
 # AC8: Missing required column raises SchemaMismatch
 # ---------------------------------------------------------------------------
+
 
 def test_ac8_missing_required_column_raises(synthetic_raw_26bp_df: pd.DataFrame) -> None:
     """AC8: Dropping a required column raises SchemaMismatch."""
@@ -150,6 +165,7 @@ def test_ac8_missing_division_type_raises(synthetic_raw_26bp_df: pd.DataFrame) -
 # AC9: target_month=0 or 13 raises InvalidMonth
 # ---------------------------------------------------------------------------
 
+
 def test_ac9_invalid_month_zero(synthetic_raw_26bp_df: pd.DataFrame) -> None:
     """AC9a: target_month=0 raises InvalidMonth."""
     with pytest.raises(errors.InvalidMonth):
@@ -165,6 +181,7 @@ def test_ac9_invalid_month_13(synthetic_raw_26bp_df: pd.DataFrame) -> None:
 # ---------------------------------------------------------------------------
 # AC10: Empty after year filter raises EmptyResult
 # ---------------------------------------------------------------------------
+
 
 def test_ac10_empty_after_year_filter(synthetic_raw_26bp_df: pd.DataFrame) -> None:
     """AC10: DataFrame where year != '26년' for all rows raises EmptyResult."""
@@ -186,6 +203,7 @@ def test_ac10_completely_empty_df() -> None:
 # AC11: Input DataFrame is not modified
 # ---------------------------------------------------------------------------
 
+
 def test_ac11_input_not_modified(synthetic_raw_26bp_df: pd.DataFrame) -> None:
     """AC11: aggregate_to_bp26 does not modify the input DataFrame."""
     original_len = len(synthetic_raw_26bp_df)
@@ -205,6 +223,7 @@ def test_ac11_input_not_modified(synthetic_raw_26bp_df: pd.DataFrame) -> None:
 # AC12: Rate columns carried forward (first non-null per group)
 # ---------------------------------------------------------------------------
 
+
 def test_ac12_rate_columns_carried_forward(synthetic_raw_26bp_df: pd.DataFrame) -> None:
     """AC12: Allocation rate columns have first non-null values per group in output."""
     result = aggregate_to_bp26(synthetic_raw_26bp_df, target_month=3)
@@ -220,6 +239,7 @@ def test_ac12_rate_columns_carried_forward(synthetic_raw_26bp_df: pd.DataFrame) 
 # ---------------------------------------------------------------------------
 # Extra: verify correct actual amounts for known fixture values
 # ---------------------------------------------------------------------------
+
 
 def test_actual_amounts_correct(synthetic_raw_26bp_df: pd.DataFrame) -> None:
     """Spot-check: m01_actual=1000, m02_actual=2000, m03_actual=3000 per group."""
@@ -246,22 +266,27 @@ def test_budget_amounts_correct(synthetic_raw_26bp_df: pd.DataFrame) -> None:
 # US-024a EVCS-Only Aggregator Path
 # ---------------------------------------------------------------------------
 
+
 def test_evcs_expansion_two_rates_two_virtual_rows(synthetic_raw_26bp_df: pd.DataFrame) -> None:
     """AC1: rate_evcs_domestic=30, rate_evcs_overseas=20 -> 2 virtual rows, no base."""
-    df = pd.DataFrame([{
-        "division_type": "실적",
-        "year": "26년",
-        "month": "1월",
-        "company": "HKR",
-        "cost_center": 101,
-        "cost_center_name": "CC101",
-        "gl_account": 510000,
-        "gl_account_name": "GL510000",
-        "org_l1": "사업그룹",
-        "amount_krw": 1000.0,
-        "rate_evcs_domestic": 30.0,
-        "rate_evcs_overseas": 20.0,
-    }])
+    df = pd.DataFrame(
+        [
+            {
+                "division_type": "실적",
+                "year": "26년",
+                "month": "1월",
+                "company": "HKR",
+                "cost_center": 101,
+                "cost_center_name": "CC101",
+                "gl_account": 510000,
+                "gl_account_name": "GL510000",
+                "org_l1": "사업그룹",
+                "amount_krw": 1000.0,
+                "rate_evcs_domestic": 30.0,
+                "rate_evcs_overseas": 20.0,
+            }
+        ]
+    )
     result = aggregate_to_bp26(df, target_month=3, expand_evcs=True)
     out = result.df
     assert len(out) == 2  # one row per org_l1
@@ -273,20 +298,24 @@ def test_evcs_expansion_two_rates_two_virtual_rows(synthetic_raw_26bp_df: pd.Dat
 
 def test_evcs_amount_scaling(synthetic_raw_26bp_df: pd.DataFrame) -> None:
     """AC2: amounts scale correctly."""
-    df = pd.DataFrame([{
-        "division_type": "실적",
-        "year": "26년",
-        "month": "1월",
-        "company": "HKR",
-        "cost_center": 101,
-        "cost_center_name": "CC101",
-        "gl_account": 510000,
-        "gl_account_name": "GL510000",
-        "org_l1": "사업그룹",
-        "amount_krw": 1000.0,
-        "rate_evcs_domestic": 30.0,
-        "rate_evcs_overseas": 20.0,
-    }])
+    df = pd.DataFrame(
+        [
+            {
+                "division_type": "실적",
+                "year": "26년",
+                "month": "1월",
+                "company": "HKR",
+                "cost_center": 101,
+                "cost_center_name": "CC101",
+                "gl_account": 510000,
+                "gl_account_name": "GL510000",
+                "org_l1": "사업그룹",
+                "amount_krw": 1000.0,
+                "rate_evcs_domestic": 30.0,
+                "rate_evcs_overseas": 20.0,
+            }
+        ]
+    )
     result = aggregate_to_bp26(df, target_month=3, expand_evcs=True)
     out = result.df
     domestic_row = out[out["org_l1"] == "EVCS국내"].iloc[0]
@@ -306,41 +335,50 @@ def test_evcs_expand_false_returns_base_only(synthetic_raw_26bp_df: pd.DataFrame
 
 def test_evcs_zero_rates_empty_output() -> None:
     """AC4: All rates zero -> empty result."""
-    df = pd.DataFrame([{
-        "division_type": "실적",
-        "year": "26년",
-        "month": "1월",
-        "company": "HKR",
-        "cost_center": 101,
-        "cost_center_name": "CC101",
-        "gl_account": 510000,
-        "gl_account_name": "GL510000",
-        "org_l1": "사업그룹",
-        "amount_krw": 1000.0,
-        "rate_evcs_domestic": 0.0,
-        "rate_evcs_overseas": 0.0,
-    }])
+    df = pd.DataFrame(
+        [
+            {
+                "division_type": "실적",
+                "year": "26년",
+                "month": "1월",
+                "company": "HKR",
+                "cost_center": 101,
+                "cost_center_name": "CC101",
+                "gl_account": 510000,
+                "gl_account_name": "GL510000",
+                "org_l1": "사업그룹",
+                "amount_krw": 1000.0,
+                "rate_evcs_domestic": 0.0,
+                "rate_evcs_overseas": 0.0,
+            }
+        ]
+    )
     result = aggregate_to_bp26(df, target_month=3, expand_evcs=True)
     assert result.df.empty
 
 
 def test_evcs_full_domestic_no_overseas():
     """US-024a AC5: rate_domestic=100, rate_overseas=0 → exactly 1 EVCS국내 row with base-equal amounts."""
-    df = pd.DataFrame([{
-        "division_type": "실적",
-        "year": "26년",
-        "month": "1월",
-        "company": "HKR",
-        "cost_center": 101,
-        "cost_center_name": "CC101",
-        "gl_account": 510000,
-        "gl_account_name": "GL510000",
-        "org_l1": "사업그룹",
-        "amount_krw": 1000.0,
-        "rate_evcs_domestic": 100.0,
-        "rate_evcs_overseas": 0.0,
-    }])
+    df = pd.DataFrame(
+        [
+            {
+                "division_type": "실적",
+                "year": "26년",
+                "month": "1월",
+                "company": "HKR",
+                "cost_center": 101,
+                "cost_center_name": "CC101",
+                "gl_account": 510000,
+                "gl_account_name": "GL510000",
+                "org_l1": "사업그룹",
+                "amount_krw": 1000.0,
+                "rate_evcs_domestic": 100.0,
+                "rate_evcs_overseas": 0.0,
+            }
+        ]
+    )
     from humax_excel_mcp.core import aggregator
+
     result = aggregator.aggregate_to_bp26(df, target_month=3, expand_evcs=True)
     out = result.df
     assert len(out) == 1, f"Expected 1 row, got {len(out)}"
@@ -348,3 +386,65 @@ def test_evcs_full_domestic_no_overseas():
     assert row["org_l1"] == "EVCS국내"
     # Amount equals base (100%)
     assert abs(row["m01_actual"] - 1000.0) < 0.01, f"m01_actual: {row['m01_actual']}"
+
+
+# ---------------------------------------------------------------------------
+# accuracy-speed PRD US-A4: EVCS 반올림 정책 (원 단위 round-half-even)
+# ---------------------------------------------------------------------------
+
+
+def _evcs_row(amount: float, rate: float) -> dict:
+    return {
+        "division_type": "실적",
+        "year": "26년",
+        "month": "1월",
+        "company": "HKR",
+        "cost_center": 101,
+        "cost_center_name": "CC101",
+        "gl_account": 510000,
+        "gl_account_name": "GL510000",
+        "org_l1": "사업그룹",
+        "amount_krw": amount,
+        "rate_evcs_domestic": rate,
+        "rate_evcs_overseas": 0.0,
+    }
+
+
+def test_us_a4_evcs_rounds_half_even_to_won() -> None:
+    """0.5원 → 0원, 1.5원 → 2원 (banker's rounding)."""
+    df = pd.DataFrame([_evcs_row(5.0, 10.0)])  # 5 x 10% = 0.5 -> 0.0
+    out = aggregate_to_bp26(df, target_month=3, expand_evcs=True).df
+    assert out.iloc[0]["m01_actual"] == 0.0
+
+    df2 = pd.DataFrame([_evcs_row(15.0, 10.0)])  # 15 x 10% = 1.5 -> 2.0
+    out2 = aggregate_to_bp26(df2, target_month=3, expand_evcs=True).df
+    assert out2.iloc[0]["m01_actual"] == 2.0
+
+
+def test_us_a4_evcs_amount_is_integral_won() -> None:
+    df = pd.DataFrame([_evcs_row(1001.0, 33.3)])  # 333.333 -> 333.0
+    out = aggregate_to_bp26(df, target_month=3, expand_evcs=True).df
+    assert out.iloc[0]["m01_actual"] == 333.0
+
+
+# ---------------------------------------------------------------------------
+# accuracy-speed PRD US-A6: 월 파싱 실패율 1% 초과 시 경고
+# ---------------------------------------------------------------------------
+
+
+def test_us_a6_month_parse_warning_over_threshold(
+    synthetic_raw_26bp_df: pd.DataFrame,
+) -> None:
+    df = synthetic_raw_26bp_df.copy()
+    n_bad = max(2, int(len(df) * 0.02))
+    df.loc[df.index[:n_bad], "month"] = "13월"
+    result = aggregate_to_bp26(df, target_month=3)
+    assert result.metadata["month_parse_failed"] == n_bad
+    assert result.metadata["month_parse_warning"]
+    assert "13월" not in result.metadata["month_parse_warning"]
+
+
+def test_us_a6_no_warning_when_clean(synthetic_raw_26bp_df: pd.DataFrame) -> None:
+    result = aggregate_to_bp26(synthetic_raw_26bp_df, target_month=3)
+    assert result.metadata["month_parse_failed"] == 0
+    assert result.metadata["month_parse_warning"] is None

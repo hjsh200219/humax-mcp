@@ -10,7 +10,7 @@ from openpyxl import load_workbook
 
 from ..core import artifact_hints as ah
 from ..core import backup as backup_mod
-from ..core import errors, excel_io
+from ..core import errors, excel_io, workbook_cache
 from ..schemas.requests import CellUpdate
 from ..schemas.responses import (
     WriteApplied,
@@ -87,15 +87,17 @@ async def write_cells(
                 missing_ab.append(row[0].row)
         if missing_ab:
             rows_str = ", ".join(str(r) for r in missing_ab[:20])
-            warnings_list.append(WriteWarning(
-                cell="AB열",
-                message=(
-                    f"⚠️ [예산수식 누락 감지] CC+GL 값이 있으나 AB(4월예산)가 비어 있는 행: "
-                    f"{rows_str}행. "
-                    "write_cells 실행 전 해당 행에 SUMIFS 수식을 먼저 추가하세요. "
-                    "누락 시 예산 합계에 차이가 발생합니다."
-                ),
-            ))
+            warnings_list.append(
+                WriteWarning(
+                    cell="AB열",
+                    message=(
+                        f"⚠️ [예산수식 누락 감지] CC+GL 값이 있으나 AB(4월예산)가 비어 있는 행: "
+                        f"{rows_str}행. "
+                        "write_cells 실행 전 해당 행에 SUMIFS 수식을 먼저 추가하세요. "
+                        "누락 시 예산 합계에 차이가 발생합니다."
+                    ),
+                )
+            )
     # ─────────────────────────────────────────────────────────────────────────
 
     seen: dict[str, int] = {}
@@ -111,17 +113,21 @@ async def write_cells(
         old_value = cell.value
         is_formula = isinstance(old_value, str) and old_value.startswith("=")
         if is_formula and upd.skip_if_formula:
-            skipped.append(WriteSkipped(
-                cell=upd.cell,
-                reason="formula_cell",
-                formula=str(old_value),
-            ))
+            skipped.append(
+                WriteSkipped(
+                    cell=upd.cell,
+                    reason="formula_cell",
+                    formula=str(old_value),
+                )
+            )
             continue
         if is_formula and not upd.skip_if_formula:
-            warnings_list.append(WriteWarning(
-                cell=upd.cell,
-                message=f"수식 덮어쓰기: {old_value}",
-            ))
+            warnings_list.append(
+                WriteWarning(
+                    cell=upd.cell,
+                    message=f"수식 덮어쓰기: {old_value}",
+                )
+            )
         if not dry_run:
             cell.value = upd.value
         applied.append(WriteApplied(cell=upd.cell, old_value=old_value, new_value=upd.value))
@@ -130,6 +136,7 @@ async def write_cells(
 
     if not dry_run:
         wb.save(out)
+        workbook_cache.invalidate(out)
         wb_check = load_workbook(out, data_only=False)
         ws_check = wb_check[sheet_name]
         mismatches: list[dict] = []

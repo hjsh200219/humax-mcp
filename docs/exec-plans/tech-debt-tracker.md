@@ -20,8 +20,8 @@
 | ~~TD-003~~ | ~~P1~~ | ~~Reliability~~ | ~~pre-commit 훅 없음~~ | ✅ 해소 (2026-05-19): `pre-commit>=3.7` dev extras 추가 + `pre-commit install` 실행 완료 |
 | TD-004 | P2 | Security | `pip-audit` / `safety` 미사용 | 의존성 취약점 미인지 | 정기 실행 + `gc.sh` 옵션 |
 | TD-005 | P2 | Architecture | `tools/template_*.py` 3개 모듈 (template_engine, report, restore) 공통 helper 추출 여지 | 중복 가능성 | 공통 패턴 점검 후 `core/template_common.py` |
-| TD-006 | P2 | Performance | openpyxl `read_only=True` 활용 미점검 | 대용량 raw xlsx 메모리 | 벤치마크 후 read 도구 전환 |
-| TD-007 | P2 | Performance | token_guard 사후 절단 방식 | 사전 row count 페이지네이션 부재 | extract에 `page` / `page_size` 파라미터 |
+| ~~TD-006~~ | ~~P2~~ | ~~Performance~~ | ~~openpyxl `read_only=True` 활용 미점검~~ | ✅ 해소 (2026-07-12): `core/workbook_cache.py` 신설 — extract/verify/allocation_get read 경로 read_only=True + mtime_ns 키 LRU 캐시. verify 수식 스캔도 read_only 전환. 벤치: extract cold 84ms → warm 6ms |
+| ~~TD-007~~ | ~~P2~~ | ~~Performance~~ | ~~token_guard 사후 절단 방식~~ | ✅ 해소 (2026-07-12): extract `page`/`page_size` 사전 페이지네이션 추가 + auto_truncate 비례 축소로 재직렬화 O(1~2)회 |
 | TD-008 | P2 | Docs | progress.txt 비구조 | 학습 메모 검색 어려움 | `docs/exec-plans/completed/`로 이관 후 삭제 |
 | TD-009 | P3 | Quality | mypy / pyright 미사용 | 타입 회귀 미탐지 | `pyright` 또는 `mypy --strict` 도입 |
 | TD-010 | P3 | Architecture | `core/aggregator.py` 388줄 | 단일 모듈 거대화 | 분할 (e.g. `aggregator/{base, evcs, virtual_rows}.py`) |
