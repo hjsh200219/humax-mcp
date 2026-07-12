@@ -18,9 +18,9 @@ Python 3.10+ · FastMCP (`mcp>=1.0`) · openpyxl 3.1+ · pandas 2.0+ · pydantic
 
 ```bash
 ruff check . && ruff format --check .   # lint + format
-pytest -q                                # 234 tests (unit + integration + e2e)
+pytest -q                                # 286 tests (unit + integration + e2e + benchmark)
 python -m build                          # wheel + sdist (배포 검증)
-bash scripts/gc.sh                       # 통합 게이트 (lint+test+build+verify-docs)
+bash scripts/gc.sh                       # 통합 게이트 (lint+test+build+verify-docs+bench advisory)
 python scripts/verify_docs.py            # 문서-코드 동기화 검증
 ```
 
@@ -104,6 +104,7 @@ Tradeoff: These guidelines bias toward caution over speed. For trivial tasks, us
 - [README.md](./README.md) — 사용자 퀵스타트
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — 레이어 + 의존 + 교차 관심사
 - [docs/prd/mcp-design-plan.md](./docs/prd/mcp-design-plan.md) — 도구 spec SSOT (Rev 4)
+- [docs/prd/accuracy-speed-improvement.md](./docs/prd/accuracy-speed-improvement.md) — 정확도·속도 개선 (Rev 2, 구현 완료)
 - [docs/prd/data-flow.md](./docs/prd/data-flow.md) — Excel 데이터 처리 흐름 (비개발자용, Python vs LLM 비교)
 - [docs/QUALITY.md](./docs/QUALITY.md) · [docs/RELIABILITY.md](./docs/RELIABILITY.md) · [docs/SECURITY.md](./docs/SECURITY.md) · [docs/PRODUCT_SENSE.md](./docs/PRODUCT_SENSE.md) · [docs/PLANS.md](./docs/PLANS.md)
 - [docs/design-docs/core-beliefs.md](./docs/design-docs/core-beliefs.md) · [docs/design-docs/layer-rules.md](./docs/design-docs/layer-rules.md)

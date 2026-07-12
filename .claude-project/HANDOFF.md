@@ -1,42 +1,57 @@
 ---
-created: 2026-07-09T00:00:00+09:00
-project: humax-mcp
-summary: 강의 4회차 Embedding·RAG 모듈(4-7) 추가 + 강의 튜너 html을 계획서 v2와 완전 동기화 (md↔html 드리프트 해소)
+created: 2026-07-12T00:00:00+09:00
+project: humax-excel-mcp
+summary: 정확도·속도 개선 PRD 작성 + 12개 US 전체 구현 완료, 286 tests green, gc.sh 전체 PASS, 코드 푸시 완료
 ---
 
 ## Session Digest
 
-1. `docs/prd/humax-lecture-plan-v2.md` 4회차에 **모듈 4-7 Embedding·RAG** 신설 (Supabase pgvector 연계, 적요→계정과목 분류·SOP RAG 질의). 시간 3h로 증가 — 사용자 "시간 조정하지 말고" 지시로 조정 보류.
-2. `docs/prd/lecture-plan-playground.html`(강의 튜너)를 md SSOT에 맞춰 **완전 동기화**. 그동안 누적된 드리프트 3건(SAP OData 3→4 이월, 하네스 4-1 신설, Embedding·RAG 4-7) 모두 반영. 3회차 9→8모듈 재번호, 4회차 4→7모듈. `node --check` OK.
-
-메타 파일(.md/.html doc)만 변경 → Python lint/test/harness-gc 미적용. 각각 clean push.
+`docs/prd/accuracy-speed-improvement.md` (Rev 2) 작성 후 12개 User Story 전체 구현. 코드 감사로 발견한 "검증했다 보고하지만 실제 검증 안 하는" 정확도 결함 3건(P0)과 구조적 속도 낭비를 근본 해결. 커밋 `eeafc00` origin/main 푸시 완료.
 
 ## Progress
 
-- ✅ 모듈 4-7 Embedding·RAG 신설 (md) — `3e824f2`
-- ✅ 강의 튜너 html md와 1:1 동기화 (드리프트 3건 해소) — `8fe221b`
-- ✅ 검증: node --check OK, 회차별 min 합 md 일치 (1회 110·2회 120·3회 105·4회 180·5회 120)
-- ✅ 커밋·푸시 완료 (clean fast-forward)
+**완료**
+- 정확도 P0: verify_sums 실계층 rollup(+SKIPPED 상태), exchange sanity 전영업일 비교 실동작화, 수식 검사 침묵 실패 제거
+- 속도 P1: exchange async+병렬 fallback, core/workbook_cache.py 신설(mtime 키 LRU + df.copy), read_only 전환
+- 정밀도 P2: EVCS 행 단위 round-half-even, month_parse_warning, auto_truncate 비례 축소, extract page/page_size, 필터 벡터화
+- 인프라: tests/benchmarks/ + gc.sh advisory 벤치, ruff pre-commit v0.5.0→v0.15.13 정렬 + known-first-party 명시, AGENTS.md 11도구 동기화, TD-006/007 해소
+- 검증: 286 tests green, gc.sh 전체 게이트 PASS, 코드 커밋·푸시 완료
+
+**미완료**
+- 없음 (본 PRD 범위 전부 완료)
 
 ## Next Steps
 
-1. 4회차 시간 3h 확정 상태 — 강의 당일 SQL/SQLite 축소 or 4-6/4-7 숙제 이관 실시간 판단 여지 (사용자가 사전 조정 보류)
-2. 3회차 실행 로그에 실제 진행일·진행 모듈 채우기 (여전히 계획 변경만 기록됨)
-3. **문서-코드 드리프트**: 도구 실제 **11개**인데 `AGENTS.md`/`CLAUDE.md`는 "도구 10개" 표기. 실파일 `AGENTS.md` 도구 표 갱신 (`CLAUDE.md`는 심볼릭 링크)
+1. **TD-004** — `pip-audit`/`safety` 도입 + gc.sh 보안 스캔 단계 (P2)
+2. **TD-005** — `tools/template_*.py` 3개 모듈 공통 helper → `core/template_common.py` 추출 (P2)
+3. **레포 전체 ruff 0.15.13 포맷 마이그레이션** — 이번 커밋은 세션 파일만 포맷. 미변경 파일은 구 포맷 잔존. 별도 포맷-only 커밋으로 `pre-commit run --all-files` 일괄 정리 권장 (선택)
+4. **verify_sums 실데이터 회귀 확인** — 5계층 실검증 활성화로 실제 결산 파일에서 중간 계층 FAIL 발생 여부 점검 (PRD §8 리스크)
 
 ## Blockers
 
-없음.
+없음
 
 ## Watch Out
 
-- **md ↔ html 동기화 (이번 세션 해소, 유지 필수)**: 회차/모듈 변경 시 두 파일 모두 갱신 + `node --check` + 회차별 min 합 검증 (memory `lecture-plan-playground-sync`). 현재 완전 일치 상태
-- 회차 min 합 120 목표는 aspirational — md가 SSOT. 현재 3회 105·4회 180은 의도된 상태(SAP 이월·4회 3h)
-- 강의 진행 기록(일회성)은 Memory 저장 안 함 — repo 문서가 SSOT
-- main 직접 push — 원격 분기 시 `git pull --rebase` 후 push
+1. **verify_sums 5계층 실검증 활성화** — 기존 실데이터에서 중간 계층 FAIL 다발 가능. tolerance 유지 + SKIPPED 상태로 점진 도입 (PRD §8).
+2. **exchange sanity는 세션 스코프** — 프로세스 재시작 직후 첫 조회는 비교 대상 데이터 없어 sanity skip (정상 동작, PRD Rev 2 명시).
+3. **workbook_cache 무효화** — write/restore 후 path invalidate 필수. 신규 write 경로 추가 시 invalidate 호출 확인.
+4. **ruff 버전 정렬 side effect** — pre-commit이 0.15.13이므로 이후 구 파일 touch 시 포맷 변경 발생 (정상 동작).
 
 ## Files Touched
 
-- `docs/prd/humax-lecture-plan-v2.md` — 모듈 4-7 Embedding·RAG + 요약표 (`3e824f2`)
-- `docs/prd/lecture-plan-playground.html` — SESSIONS 3·4회 재작성, 프롬프트 문구 (`8fe221b`)
-- `.claude-project/HANDOFF.md` — 본 파일
+**신규**
+- docs/prd/accuracy-speed-improvement.md, src/humax_excel_mcp/core/workbook_cache.py
+- tests/benchmarks/{__init__,test_perf_baseline}.py, tests/unit/test_workbook_cache.py
+
+**핵심 수정**
+- tools/verify.py (5계층 rollup + 수식 에러 표면화 + read_only)
+- tools/exchange.py (async + gather 병렬 fallback + 전영업일 sanity)
+- tools/extract.py (캐시 통합 + page/page_size + 필터 벡터화)
+- core/{aggregator,token_guard,excel_io,errors}.py, schemas/responses.py (SKIPPED status)
+- tools/{allocation_get,write,restore}.py (캐시 통합/invalidate)
+
+**설정·문서·테스트**
+- pyproject.toml, .pre-commit-config.yaml, scripts/gc.sh
+- AGENTS.md, docs/exec-plans/tech-debt-tracker.md, docs/harness/gc-history.md
+- tests/conftest.py + unit 테스트 5종 (verify/exchange/extract/aggregator/excel_io)
