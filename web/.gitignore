@@ -1,0 +1,25 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# env — 절대 커밋 금지 (Supabase 키)
+.env
+.env*.local
+.env.local
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+next-env.d.ts
+
+# TS build cache
+tsconfig.tsbuildinfo
