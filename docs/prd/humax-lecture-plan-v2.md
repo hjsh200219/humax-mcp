@@ -205,22 +205,32 @@
 
 ---
 
-## 3회차: Playground · Git · 환경변수 · API · MCP 테스트 (2h)
+## 3회차: Playground · watch · Git · 환경변수 · API · MCP 테스트 (2h)
 
-### 모듈 3-1: Playground 스킬 소개 (10min)
+### 모듈 3-1: Playground · watch 스킬 소개 (20min)
 
-**목표**: 옵션 탐색용 인터랙티브 도구 체험
+**목표**: 옵션 탐색용 인터랙티브 도구 체험 + 영상 강의를 Claude에게 보여 주고 내 스킬로 만드는 흐름 체험
 
-**내용**:
+**내용 — Playground (10min)**:
 - Playground 스킬 = 주제 하나로 자체완결 인터랙티브 HTML 생성 (컨트롤 + 라이브 미리보기 + 프롬프트 복사 버튼)
 - 사용 흐름: 컨트롤 조정 → 즉시 미리보기 → 하단 프롬프트 복사 → Claude에 붙여넣기
 - 외부 의존성 0, 단일 HTML 파일 → 공유·재사용 쉬움
 - 실 예제: 본 강의 계획서로 만든 `docs/prd/lecture-plan-playground.html` (강의 튜너)
 
+**내용 — watch 스킬 (10min)**:
+- watch = Claude에게 영상을 보여 주는 무료 플러그인 스킬 (`bradautomates/claude-video`, MIT, GitHub 별 2만+)
+- 동작: 영상 URL·파일 → 장면은 시간 표시된 사진(ffmpeg), 말은 자막·받아쓰기 글로 뽑아 Claude에 전달 → 자막만 읽을 때보다 화면 내용까지 정확히 이해
+- Claude Code 전용 (Desktop의 Code 세션·VS Code·터미널). Chat·Cowork 에서는 동작하지 않음
+- 설치: `/plugin marketplace add bradautomates/claude-video` → `/plugin install watch@claude-video` (Desktop 은 Customize → Plugins → Add marketplace)
+- 보는 방식 두 가지: Gemini(무료 API 키, 영상을 Google 에 보냄) / local(내 PC에서 사진·자막 추출, 키 불필요)
+- 응용 흐름: 저장만 해 둔 업무 강의 영상 → `/watch` 로 보여 주기 → "이 강의 방식대로 스킬로 만들어 줘" → SKILL.md 생성 → 다음부터 슬래시 명령 하나로 같은 방식 실행 (스킬 만들기는 Claude가 하는 후속 단계이며 watch 자체 기능은 아님)
+- 주의: 사내 회의 녹화 등 내부 영상은 Gemini 방식으로 보내지 않음 (local 방식 사용)
+
 **실습**:
 - lecture-plan-playground.html 열어 회차·모듈·페이스 조정 → 수정 프롬프트 생성 체험
+- 강사 시연: 공개 YouTube 엑셀·재무 강의 1개를 `/watch` 로 보여 주고 요약 → 그 방식대로 스킬 1개 생성 (수강생 설치는 선택 과제)
 
-**산출**: Playground 1회 사용 경험
+**산출**: Playground 1회 사용 경험 + watch 로 영상 → 스킬 만드는 흐름 1회 관찰
 
 ---
 
@@ -578,7 +588,7 @@
 |---|---|---|---|---|
 | 1회 (2h) | Claude Desktop 풀활용 | D + R 일부 | Schedule(매월 1영업일) → 환율 자동 갱신 / Skill 1줄 → 배부판 생성 | Cowork Project + MCP 등록 + Skill/Schedule 1개씩 + Extension 4종 |
 | 2회 (2h) | Claude Code 본격 도입 | I | PRD 1장 → ralph 루프 자동 코드 생성·수정 | VS Code + OMC + ralph/ralplan + CCG 멀티 모델 환경 |
-| 3회 (2h) | Playground · Git · 환경변수 · API · MCP 테스트 | I 응용 | cron/명령 → 공공 API 자동 호출 → repo 자동 commit / MCP 로그 검증 | Playground 체험 + GitHub repo + `.env` + 환율 스크립트 + MCP 로그 분석 |
+| 3회 (2h) | Playground · watch · Git · 환경변수 · API · MCP 테스트 | I 응용 | cron/명령 → 공공 API 자동 호출 → repo 자동 commit / MCP 로그 검증 / 강의 영상 → `/watch` → 스킬화 | Playground 체험 + watch 시연 + GitHub repo + `.env` + 환율 스크립트 + MCP 로그 분석 |
 | 4회 (2h) | 하네스 · SAP OData · SQL · DB · Supabase · Embedding/RAG | I 데이터 | 결산 결과 → DB 자동 적재 / 적요 → embedding 유사 계정 검색 / CLAUDE.md → 매 세션 규칙 자동 로드 | 하네스 CLAUDE.md + SAP OData 로드맵 + SQLite + Supabase DB(3 테이블) + 데이터 1건 + pgvector 검색 |
 | 5회 (2h) | Vercel · 웹 · E2E 테스트 | I 풀스택 | git push → 자동 배포 / 배포 → E2E 자동 검증 | Next.js 페이지 + Vercel 배포 URL + Playwright E2E |
 
