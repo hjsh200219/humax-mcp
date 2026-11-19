@@ -5,6 +5,7 @@
 ## 응답 스타일
 
 Be concise. No filler. Straight to the point. Use fewer words.
+상세 규칙(결론 먼저·숫자 정확·보고 초안·번역): @docs/response-style.md
 
 ## 프로젝트 한 줄
 
